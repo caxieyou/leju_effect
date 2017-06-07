@@ -11,9 +11,9 @@ var VSHADER_SOURCE =
 
 // Fragment shader program
 var FSHADER_SOURCE =
-    '#ifdef GL_ES\n' +
+    //'#ifdef GL_ES\n' +
     'precision mediump float;\n' +
-    '#endif\n' +
+    //'#endif\n' +
     'uniform float u_Brightness;\n' +
     'uniform float u_Contrast;\n' +
     'uniform float u_Saturation;\n' +
@@ -23,15 +23,34 @@ var FSHADER_SOURCE =
     'uniform sampler2D u_Sampler;\n' +
     'varying vec2 v_TexCoord;\n' +
     
-    'vec3 brightAndContrastAdjust(vec3 color) {\n' +
+    'vec3 brightAdjust(vec3 color) {\n' +
+    '    vec2 c2 = vec2(185.0 - u_Brightness, 185.0 + u_Brightness); \n' +
+    '    vec3 vt;\n' +
+    '    float t= 0.0; \n' +
+    '    for (int i = 1; i < 1024; i++){\n' +
+    '        t += 0.0009765625;\n' +
+    '        float a =  (c2.x * ((-3.0 * t * t + 3.0 * t) + 255.0 * (1.0-t) * (1.0-t) * (1.0-t)));\n' +
+    '        if (abs(a - color.r) < 1.0) {\n' +
+    '            vt.x = t;\n' +
+    '        }\n' +
+    '        if (abs(a - color.g) < 1.0) {\n' +
+    '            vt.y = t;\n' +
+    '        }\n' +
+    '        if (abs(a - color.b) < 1.0) {\n' +
+    '            vt.z = t;\n' +
+    '        }\n' +
+    '    }\n' +
+    '    color = (c2.y * ((-3.0 * vt * vt + 3.0 * vt) + 255.0 * (1.0-vt) * (1.0-vt) * (1.0-vt)));\n' +
+    '    return color; \n' +
+    '}\n' +
+    
+    'vec3 contrastAdjust(vec3 color) {\n' +
     '   float cv = u_Contrast / 255.0;  \n' +
     '   if (u_Contrast > 0.0 && u_Contrast < 255.0) {\n' +
     '     cv = 1.0 / (1.0 - cv) - 1.0;  \n' +
     '   }\n' +
-    '   vec3 v = u_Contrast > 0.0 ? clamp (color + u_Brightness, 0.0, 255.0) : color.xyz;  \n' +
-    '   v = clamp(v + ((v - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
-    '   v = u_Contrast <= 0.0 ? clamp(v + u_Brightness, 0.0, 255.0) : v;  \n' +
-    '   return v;\n' +
+    '   color = clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
+    '   return color;\n' +
     '}\n' +
     
     
@@ -118,25 +137,14 @@ var FSHADER_SOURCE =
     'void main() {\n' +
     
     '   vec3 color = texture2D(u_Sampler, v_TexCoord).xyz * 255.0;\n' + 
-    '   color = brightAndContrastAdjust(color);  \n' +
+    '   color = brightAdjust(color);  \n' +
+    '   color = contrastAdjust(color);  \n' +
     '   color = saturationAdjust(color, u_Saturation / 100.0);  \n' +
     '   color = sharpenAdjust(color);  \n' +
     
     '   gl_FragColor = vec4(color / 255.0, 1.0);\n' +
     
     '}\n';
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
     
     
 var gl;
@@ -182,36 +190,36 @@ function onSharpenChecked(value)
 
 function main() {
     // Retrieve <canvas> element
-  var canvas = document.getElementById('webgl');
+    var canvas = document.getElementById('webgl');
 
-  // Get the rendering context for WebGL
-  gl = getWebGLContext(canvas);
-  if (!gl) {
-    console.log('Failed to get the rendering context for WebGL');
-    return;
-  }
+    // Get the rendering context for WebGL
+    gl = getWebGLContext(canvas);
+    if (!gl) {
+        console.log('Failed to get the rendering context for WebGL');
+        return;
+    }
 
-  // Initialize shaders
-  if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log('Failed to intialize shaders.');
-    return;
-  }
+    // Initialize shaders
+    if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+        console.log('Failed to intialize shaders.');
+        return;
+    }
 
-  // Set the vertex information
-  initVertexBuffers();
-  if (n < 0) {
-    console.log('Failed to set the vertex information');
-    return;
-  }
+    // Set the vertex information
+    initVertexBuffers();
+    if (n < 0) {
+        console.log('Failed to set the vertex information');
+        return;
+    }
 
-  // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // Specify the color for clearing <canvas>
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-  // Set texture
-  if (!initTextures()) {
-    console.log('Failed to intialize the texture.');
-    return;
-  }
+    // Set texture
+    if (!initTextures()) {
+        console.log('Failed to intialize the texture.');
+        return;
+    }
 }
 
 function initVertexBuffers() {
