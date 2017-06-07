@@ -28,10 +28,43 @@
     </p>
     
     <p>
+      <span >色阶</span>
+    </p>
+    
+    <p>
+    <span >输入色阶Min</span>
+    <input type="range" min="0" max="255" value="0" onchange="onInputStageMinChanged(this.value)"/>
+    <span id="inputMinStage">0</span>
+    </p>
+    
+    <p>
+    <span >输入色阶Max</span>
+    <input type="range" min="0" max="255" value="255" onchange="onInputStageMaxChanged(this.value)"/>
+    <span id="inputMaxStage">255</span>
+    </p>
+    
+    <p>
+    <span >gamma校正</span>
+    <input type="range" min="0.01" max="9.99" value="1" onchange="onGammaChanged(this.value)"/>
+    <span id="gamma">1</span>
+    </p>
+    
+    <p>
+    <span >输出色阶Min</span>
+    <input type="range" min="0" max="255" value="0" onchange="onOutputStageMinChanged(this.value)"/>
+    <span id="outputMinStage">0</span>
+    </p>
+    
+    <p>
+    <span >输出色阶Max</span>
+    <input type="range" min="0" max="255" value="255" onchange="onOutputStageMaxChanged(this.value)"/>
+    <span id="outputMaxStage">255</span>
+    </p>
+
+    <p>
       <span >锐化</span>
       <input type="checkbox" onchange="onSharpenChecked(this.checked)"/>
     </p>
-    
     
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>

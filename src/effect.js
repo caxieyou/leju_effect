@@ -19,7 +19,13 @@ var FSHADER_SOURCE =
     'uniform float u_Saturation;\n' +
     'uniform int u_Sharpen;\n' +
     'uniform vec2 u_InvSize;\n' +
-    'uniform float u_Template[25];\n' +
+'uniform float u_Template[25];\n' +
+    'uniform float u_InputMinStage;\n' +
+    'uniform float u_InputMaxStage;\n' +
+    'uniform float u_Gamma;\n' +
+    'uniform float u_OutputMinStage;\n' +
+    'uniform float u_OutputMaxStage;\n' +
+    
     'uniform sampler2D u_Sampler;\n' +
     'varying vec2 v_TexCoord;\n' +
     
@@ -131,8 +137,29 @@ var FSHADER_SOURCE =
     '        return color;\n' +
     '    }\n' +
     '}\n' +
+    /*
+    Filtrr2.Util.normalize(255 * Math.pow(Filtrr2.Util.normalize(rgba.r, 0, 255, ib, iw)/255, 1/gm), ob, ow, 0, 255);}
     
+    'uniform float u_InputMinStage;\n' +
+    'uniform float u_InputMaxStage;\n' +
+    'uniform float u_Gamma;\n' +
+    'uniform float u_OutputMinStage;\n' +
+    'uniform float u_OutputMaxStage;\n' +
+    */
     
+    //Filtrr2.Util.normalize(255 * Math.pow(Filtrr2.Util.normalize(rgba.r, 0, 255, ib, iw)/255, 1/gm), ob, ow, 0, 255);}
+    
+    'vec3 myNormalize(vec3 val, float dmin, float dmax, float smin, float smax) {\n' +
+    '    float sdist = sqrt((smin - smax) * (smin - smax));\n' +
+    '    float ddist = sqrt((dmin - dmax) * (dmin - dmax));\n' +
+    '    float ratio = ddist / sdist; \n' +
+    '    val = clamp(val, smin, smax);\n' +
+    '    return dmin + (val-smin) * ratio;\n' +
+    '}\n' +
+    
+    'vec3 stageAdjust(vec3 color) {\n' +
+    '   return color = myNormalize(255.0 * pow(myNormalize(color, 0.0, 255.0, u_InputMinStage, u_InputMaxStage) / 255.0, vec3(1.0 / u_Gamma)),u_OutputMinStage, u_OutputMaxStage, 0.0, 255.0);\n' +
+    '}\n' +
     
     'void main() {\n' +
     
@@ -141,7 +168,7 @@ var FSHADER_SOURCE =
     '   color = contrastAdjust(color);  \n' +
     '   color = saturationAdjust(color, u_Saturation / 100.0);  \n' +
     '   color = sharpenAdjust(color);  \n' +
-    
+    '   color = stageAdjust(color);  \n' +
     '   gl_FragColor = vec4(color / 255.0, 1.0);\n' +
     
     '}\n';
@@ -175,6 +202,42 @@ function onSaturationChanged(value)
     updateCanvas();
 }
 
+
+function onInputStageMinChanged(value)
+{
+    document.getElementById("inputMinStage").innerHTML = value;
+    gl.uniform1f(u_InputMinStage, value);
+    updateCanvas();
+}
+
+function onInputStageMaxChanged(value)
+{
+    document.getElementById("inputMaxStage").innerHTML = value;
+    gl.uniform1f(u_InputMaxStage, value);
+    updateCanvas();
+}
+
+function onGammaChanged(value)
+{
+    document.getElementById("gamma").innerHTML = value;
+    gl.uniform1f(u_Gamma, value);
+    updateCanvas();
+}
+
+function onOutputStageMinChanged(value)
+{
+    document.getElementById("outputMinStage").innerHTML = value;
+    gl.uniform1f(u_OutputMinStage, value);
+    updateCanvas();
+}
+
+function onOutputStageMaxChanged(value)
+{
+    document.getElementById("outputMaxStage").innerHTML = value;
+    gl.uniform1f(u_OutputMaxStage, value);
+    updateCanvas();
+}
+    
 function onSharpenChecked(value)
 {
     if(value) {
@@ -186,7 +249,6 @@ function onSharpenChecked(value)
         //do nothing
     }
 }
-
 
 function main() {
     // Retrieve <canvas> element
@@ -312,6 +374,36 @@ function initTextures() {
     console.log('Failed to get the storage location of u_Template');
     return false;
   }
+
+  u_InputMinStage = gl.getUniformLocation(gl.program, 'u_InputMinStage');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_InputMinStage');
+    return false;
+  }
+
+  u_InputMaxStage = gl.getUniformLocation(gl.program, 'u_InputMaxStage');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_InputMaxStage');
+    return false;
+  }
+
+  u_Gamma = gl.getUniformLocation(gl.program, 'u_Gamma');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Gamma');
+    return false;
+  }
+
+  u_OutputMinStage = gl.getUniformLocation(gl.program, 'u_OutputMinStage');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_OutputMinStage');
+    return false;
+  }
+
+  u_OutputMaxStage = gl.getUniformLocation(gl.program, 'u_OutputMaxStage');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_OutputMaxStage');
+    return false;
+  }  
   
   var image = new Image();  // Create the image object
   if (!image) {
@@ -346,6 +438,13 @@ function initTextures() {
                                                 -7, -26, 505, -26, -7,  
                                                 -4, -16, -26, -16, -4,   
                                                 -1, -4, -7, -4, -1 ]);
+                                                
+                    gl.uniform1f(u_InputMinStage, 0);
+                    gl.uniform1f(u_InputMaxStage, 255);
+                    gl.uniform1f(u_Gamma, 1);
+                    gl.uniform1f(u_OutputMinStage, 0);
+                    gl.uniform1f(u_OutputMaxStage, 255);
+                    
                     updateCanvas(); 
                  };
   // Tell the browser to load an image
