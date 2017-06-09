@@ -16,10 +16,12 @@ var FSHADER_SOURCE =
     //'#endif\n' +
     'uniform float u_Brightness;\n' +
     'uniform float u_Contrast;\n' +
+    'uniform float u_Hue;\n' +
     'uniform float u_Saturation;\n' +
+    'uniform float u_Lightness;\n' +
     'uniform int u_Sharpen;\n' +
     'uniform vec2 u_InvSize;\n' +
-'uniform float u_Template[25];\n' +
+    'uniform float u_Template[25];\n' +
     'uniform float u_InputMinStage;\n' +
     'uniform float u_InputMaxStage;\n' +
     'uniform float u_Gamma;\n' +
@@ -59,40 +61,102 @@ var FSHADER_SOURCE =
     '   return color;\n' +
     '}\n' +
     
+
+    'vecc lightnesAdjust(vec3 color) {\n' +
+    '    float ratio = u_Lightness / 100.0; \n' + 
+    '    if (u_Lightness >= 0.0) {\n' +
+    '        color = color + (255.0 - color) * ratio;\n' +
+    '    } else {\n' +
+    '        color = color + color * ratio;\n' +
+    '    }  \n' +
+    '    return color;\n' +
+    '}\n' +
     
-    'vec3 saturationAdjust(vec3 color, float saturation) {\n' +
-    '   float rgbMax = max(max(color.x, color.y), color.z);\n' +
-    '   float rgbMin = min(min(color.x, color.y), color.z);\n' +
-    '   float delta = (rgbMax-rgbMin)/255.0;\n' +
-    '   if (delta == 0.0) {\n' +
-    '       return color;\n' +
-    '   }\n' +
+    vecc hueAndsaturationAdjust(vec3 color) {
+
+        if (intR < intG)  
+            SwapRGB(intR, intG);  
+        if (intR < intB)  
+            SwapRGB(intR, intB);  
+        if (intB > intG)  
+            SwapRGB(intB, intG);  
+      
+        int delta = intR - intB;  
+        if (!delta) return;  
+      
+        int entire = intR + intB;  
+        int H, S, L = entire >> 1;  
+        if (L < 128)  
+            S = delta * 255 / entire;  
+        else  
+            S = delta * 255 / (510 - entire);  
+        if (hValue)  
+        {  
+            if (intR == R)  
+                H = (G - B) * 60 / delta;  
+            else if (intR == G)  
+                H = (B - R) * 60 / delta + 120;  
+            else  
+                H = (R - G) * 60 / delta + 240;  
+            H += hValue;  
+            if (H < 0) H += 360;  
+            else if (H > 360) H -= 360;  
+            int index = H / 60;  
+            int extra = H % 60;  
+            if (index & 1) extra = 60 - extra;  
+            extra = (extra * 255 + 30) / 60;  
+            intG = extra - (extra - 128) * (255 - S) / 255;  
+            int Lum = L - 128;  
+            if (Lum > 0)  
+                intG += (((255 - intG) * Lum + 64) / 128);  
+            else if (Lum < 0)  
+                intG += (intG * Lum / 128);  
+            CheckRGB(intG);  
+            switch (index)  
+            {  
+                case 1:  
+                    SwapRGB(intR, intG);  
+                    break;  
+                case 2:  
+                    SwapRGB(intR, intB);  
+                    SwapRGB(intG, intB);  
+                    break;  
+                case 3:  
+                    SwapRGB(intR, intB);  
+                    break;  
+                case 4:  
+                    SwapRGB(intR, intG);  
+                    SwapRGB(intG, intB);  
+                    break;  
+                case 5:  
+                    SwapRGB(intG, intB);  
+                    break;  
+            }  
+        }  
+        else  
+        {  
+            intR = R;  
+            intG = G;  
+            intB = B;  
+        }  
+        if (sValue)  
+        {  
+            if (sValue > 0)  
+            {  
+                sValue = sValue + S >= 255? S: 255 - sValue;  
+                sValue = 65025 / sValue - 255;  
+            }  
+            intR += ((intR - L) * sValue / 255);  
+            intG += ((intG - L) * sValue / 255);  
+            intB += ((intB - L) * sValue / 255);  
+        }  
+        return color;
+    }
     
-    '   float value = (rgbMax + rgbMin)/255.0;\n' +
-    '   float l = value / 2.0;\n' +
-    '   float s = 0.0;\n' +
-    '   if (l < 0.5) {\n' +
-    '       s = delta / value;\n' +
-    '   } else {\n' +
-    '       s = delta /(2.0 - value);\n' +
-    '   }\n' +
-  
-    '   float alpha = 0.0; \n' +
-    
-    '   if (saturation >= 0.0) {\n' +
-    '       if (saturation + s >= 1.0) {\n' +
-    '           alpha = s;\n' +
-    '       } else {\n' +
-    '           alpha = 1.0 - saturation;\n' +
-    '       }\n' +
-    '       alpha = 1.0 /alpha - 1.0;\n' +
-    '        color = color + (color - l * 255.0) * alpha;\n' +
-    '   } else {\n' +
-    '       alpha = saturation;\n' +
-    '       color = (l * 255.0 + color - l * 255.0) * (1.0 + alpha);\n' +
-    '   }\n' +
-    '   color = clamp(color, 0.0, 255.0);\n' +
-    '   return color;\n' +
+    'vec3 hslAdjustment(color) { \n' +
+    '    color = hueAndsaturationAdjust(color);\n' +
+    '    color = lightnesAdjust(color);\n' +
+    '    return color;\n' +
     '}\n' +
     
     'vec3 sharpenAdjust(vec3 color) {\n' +
@@ -137,17 +201,6 @@ var FSHADER_SOURCE =
     '        return color;\n' +
     '    }\n' +
     '}\n' +
-    /*
-    Filtrr2.Util.normalize(255 * Math.pow(Filtrr2.Util.normalize(rgba.r, 0, 255, ib, iw)/255, 1/gm), ob, ow, 0, 255);}
-    
-    'uniform float u_InputMinStage;\n' +
-    'uniform float u_InputMaxStage;\n' +
-    'uniform float u_Gamma;\n' +
-    'uniform float u_OutputMinStage;\n' +
-    'uniform float u_OutputMaxStage;\n' +
-    */
-    
-    //Filtrr2.Util.normalize(255 * Math.pow(Filtrr2.Util.normalize(rgba.r, 0, 255, ib, iw)/255, 1/gm), ob, ow, 0, 255);}
     
     'vec3 myNormalize(vec3 val, float dmin, float dmax, float smin, float smax) {\n' +
     '    float sdist = sqrt((smin - smax) * (smin - smax));\n' +
@@ -166,7 +219,8 @@ var FSHADER_SOURCE =
     '   vec3 color = texture2D(u_Sampler, v_TexCoord).xyz * 255.0;\n' + 
     '   color = brightAdjust(color);  \n' +
     '   color = contrastAdjust(color);  \n' +
-    '   color = saturationAdjust(color, u_Saturation / 100.0);  \n' +
+    //'   color = saturationAdjust(color, u_Saturation / 100.0);  \n' +
+    '   color = hslAdjustment(color);  \n' +
     '   color = sharpenAdjust(color);  \n' +
     '   color = stageAdjust(color);  \n' +
     '   gl_FragColor = vec4(color / 255.0, 1.0);\n' +
@@ -195,10 +249,24 @@ function onContrastChanged(value)
     updateCanvas();
 }
 
+function onHueChanged(value)
+{
+    document.getElementById("hue").innerHTML = value;
+    gl.uniform1f(u_Hue, value);
+    updateCanvas();
+}
+
 function onSaturationChanged(value)
 {
     document.getElementById("saturation").innerHTML = value;
     gl.uniform1f(u_Saturation, value);
+    updateCanvas();
+}
+
+function onLightnessChanged(value)
+{
+    document.getElementById("lightness").innerHTML = value;
+    gl.uniform1f(u_Lightness, value);
     updateCanvas();
 }
 
@@ -352,9 +420,21 @@ function initTextures() {
     return false;
   }
 
+  u_Hue = gl.getUniformLocation(gl.program, 'u_Hue');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Hue');
+    return false;
+  }
+  
   u_Saturation = gl.getUniformLocation(gl.program, 'u_Saturation');
   if (!u_Sampler) {
     console.log('Failed to get the storage location of u_Saturation');
+    return false;
+  }
+  
+  u_Lightness = gl.getUniformLocation(gl.program, 'u_Lightness');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Lightness');
     return false;
   }
 
@@ -369,6 +449,7 @@ function initTextures() {
     console.log('Failed to get the storage location of u_InvSize');
     return false;
   }
+  
   u_Template = gl.getUniformLocation(gl.program, 'u_Template');
   if (!u_Sampler) {
     console.log('Failed to get the storage location of u_Template');
@@ -430,7 +511,9 @@ function initTextures() {
                     gl.uniform1i(u_Sampler, 0);
                     gl.uniform1f(u_Brightness, 0);
                     gl.uniform1f(u_Contrast, 0);
+                    gl.uniform1f(u_Hue, 0);
                     gl.uniform1f(u_Saturation, 0);
+                    gl.uniform1f(u_Lightness, 0);
                     gl.uniform1i(u_Sharpen, 0);
                     gl.uniform2f(u_InvSize, 1 / image.width, 1/ image.height);
                     gl.uniform1fv(u_Template, [-1, -4, -7, -4, -1,   

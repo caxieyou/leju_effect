@@ -22,9 +22,21 @@
     </p>
     
     <p>
+      <span >色相</span>
+      <input type="range" min="-180" max="180" value="0" onchange="onHueChanged(this.value)"/>
+      <span id="hue">0</span>
+    </p>
+    
+    <p>
       <span >饱和度</span>
-      <input type="range" min="-50" max="100" value="0" onchange="onSaturationChanged(this.value)"/>
+      <input type="range" min="-100" max="100" value="0" onchange="onSaturationChanged(this.value)"/>
       <span id="saturation">0</span>
+    </p>
+    
+    <p>
+      <span >明度</span>
+      <input type="range" min="-100" max="100" value="0" onchange="onLightnessChanged(this.value)"/>
+      <span id="lightness">0</span>
     </p>
     
     <p>
