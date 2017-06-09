@@ -11,15 +11,17 @@ var VSHADER_SOURCE =
 
 // Fragment shader program
 var FSHADER_SOURCE =
-    //'#ifdef GL_ES\n' +
+    '#ifdef GL_ES\n' +
     'precision mediump float;\n' +
-    //'#endif\n' +
+    '#endif\n' +
     'uniform float u_Brightness;\n' +
     'uniform float u_Contrast;\n' +
+    'uniform float u_Hue;\n' +
     'uniform float u_Saturation;\n' +
+    'uniform float u_Lightness;\n' +
     'uniform int u_Sharpen;\n' +
     'uniform vec2 u_InvSize;\n' +
-'uniform float u_Template[25];\n' +
+    'uniform float u_Template[25];\n' +
     'uniform float u_InputMinStage;\n' +
     'uniform float u_InputMaxStage;\n' +
     'uniform float u_Gamma;\n' +
@@ -29,25 +31,13 @@ var FSHADER_SOURCE =
     'uniform sampler2D u_Sampler;\n' +
     'varying vec2 v_TexCoord;\n' +
     
+    'bool isEqual(float a , float b) {\n' +
+    '    return abs(a- b) < 0.00001;\n' +
+    '}\n' +
+    
     'vec3 brightAdjust(vec3 color) {\n' +
-    '    vec2 c2 = vec2(185.0 - u_Brightness, 185.0 + u_Brightness); \n' +
-    '    vec3 vt;\n' +
-    '    float t= 0.0; \n' +
-    '    for (int i = 1; i < 1024; i++){\n' +
-    '        t += 0.0009765625;\n' +
-    '        float a =  (c2.x * ((-3.0 * t * t + 3.0 * t) + 255.0 * (1.0-t) * (1.0-t) * (1.0-t)));\n' +
-    '        if (abs(a - color.r) < 1.0) {\n' +
-    '            vt.x = t;\n' +
-    '        }\n' +
-    '        if (abs(a - color.g) < 1.0) {\n' +
-    '            vt.y = t;\n' +
-    '        }\n' +
-    '        if (abs(a - color.b) < 1.0) {\n' +
-    '            vt.z = t;\n' +
-    '        }\n' +
-    '    }\n' +
-    '    color = (c2.y * ((-3.0 * vt * vt + 3.0 * vt) + 255.0 * (1.0-vt) * (1.0-vt) * (1.0-vt)));\n' +
-    '    return color; \n' +
+    '    color += u_Brightness; \n ' +
+    '    return clamp(color, 0.0, 255.0);\n' +
     '}\n' +
     
     'vec3 contrastAdjust(vec3 color) {\n' +
@@ -55,44 +45,73 @@ var FSHADER_SOURCE =
     '   if (u_Contrast > 0.0 && u_Contrast < 255.0) {\n' +
     '     cv = 1.0 / (1.0 - cv) - 1.0;  \n' +
     '   }\n' +
-    '   color = clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
-    '   return color;\n' +
+    '   return clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
     '}\n' +
     
+    'vec4 rgba2hsla (vec3 color) {\n' +
+    '    color = color / 255.0;\n' +
+    '    float _max = max(color.r, max(color.g, color.b));\n' +
+    '    float _min = min(color.r, min(color.g, color.b));\n' +
+    '    float h, s;\n' +
+    '    float l = (_max + _min) / 2.0;\n' +
+        
+    '    if (isEqual(_max, _min)) {\n' +
+    '        h = s = 1.0;\n' +
+    '    } else {\n' +
+    '        float d = _max - _min;\n' +
+    '        s = l > 0.5 ? d / (2.0 - _max - _min) : d / (_max + _min);\n' +
+    '        if (isEqual(_max, color.r)) {\n' +
+    '            h = (color.g - color.b) / d + (color.g < color.b ? 6.0 : 0.0);\n' +
+    '       } else if (isEqual(_max, color.g)) {\n' +
+    '            h = (color.b - color.r) / d + 2.0;\n' +
+    '        } else {\n' +
+    '            h = (color.r - color.b) / d + 4.0;\n' +
+    '        }\n' +
+    '        h /= 6.0;\n' +
+    '    }\n' +
+    '    return clamp(vec4(h, s, l, 1.0), 0.0, 1.0);\n' +
+        
+    '}\n' +
     
-    'vec3 saturationAdjust(vec3 color, float saturation) {\n' +
-    '   float rgbMax = max(max(color.x, color.y), color.z);\n' +
-    '   float rgbMin = min(min(color.x, color.y), color.z);\n' +
-    '   float delta = (rgbMax-rgbMin)/255.0;\n' +
-    '   if (delta == 0.0) {\n' +
-    '       return color;\n' +
-    '   }\n' +
+    'float hue2rgb(float p, float q, float t){\n' +
+    '    if(t < 0.0) \n' +
+    '        t += 1.0;\n' +
+        
+    '    if(t > 1.0) \n' +
+    '        t -= 1.0;\n' +
+    '    if(t <= 1.0 / 6.0) \n' +
+    '        return p + (q - p) * 6.0 * t;\n' +
+        
+    '    if(t <= 1.0 / 2.0) \n' +
+    '        return q;\n' +
+        
+    '    if(t <= 2.0 / 3.0) \n' +
+    '        return p + (q - p) * (2.0/3.0 - t) * 6.0;\n' +
+    '    return p;\n' +
+    '}\n' +
+        
+    'vec3  hsla2rgba (vec4 hsla) {\n' +
+    '    if (isEqual(hsla.g, 0.0)) {\n' +
+    '        return vec3(hsla.b);\n' +
+    '    } else {\n' +
+    '        vec3 color;\n' +
+    '        float q = hsla.b < 0.5 ? hsla.b * (1.0 + hsla.g) : hsla.b + hsla.g - hsla.b * hsla.g;\n' +
+    '        float p = 2.0 * hsla.b - q;\n' +
+    '        color.r = hue2rgb(p, q, hsla.r + 1.0 / 3.0);\n' +
+    '        color.g = hue2rgb(p, q, hsla.r);\n' +
+    '        color.b = hue2rgb(p, q, hsla.r - 1.0 / 3.0);\n' +
+    '        return color * 255.0;\n' +
+    '    }\n' +
+    '}\n' +
     
-    '   float value = (rgbMax + rgbMin)/255.0;\n' +
-    '   float l = value / 2.0;\n' +
-    '   float s = 0.0;\n' +
-    '   if (l < 0.5) {\n' +
-    '       s = delta / value;\n' +
-    '   } else {\n' +
-    '       s = delta /(2.0 - value);\n' +
-    '   }\n' +
-  
-    '   float alpha = 0.0; \n' +
-    
-    '   if (saturation >= 0.0) {\n' +
-    '       if (saturation + s >= 1.0) {\n' +
-    '           alpha = s;\n' +
-    '       } else {\n' +
-    '           alpha = 1.0 - saturation;\n' +
-    '       }\n' +
-    '       alpha = 1.0 /alpha - 1.0;\n' +
-    '        color = color + (color - l * 255.0) * alpha;\n' +
-    '   } else {\n' +
-    '       alpha = saturation;\n' +
-    '       color = (l * 255.0 + color - l * 255.0) * (1.0 + alpha);\n' +
-    '   }\n' +
-    '   color = clamp(color, 0.0, 255.0);\n' +
-    '   return color;\n' +
+    'vec3 hslAdjustment(vec3 color) { \n' +
+    '    vec3 hsl_param = vec3(u_Hue / 180.0, u_Saturation / 100.0, u_Lightness / 100.0); \n' +
+    '    vec4 hsla = rgba2hsla(color);\n' +
+    '    hsla.r += hsl_param.r * hsla.r;\n' +
+    '    hsla.g += hsl_param.g * hsla.g;\n' +
+    '    hsla.b += hsl_param.b * hsla.b;\n' +
+    '    color = hsla2rgba(hsla);\n' +
+    '    return clamp(color, 0.0, 255.0);\n' +
     '}\n' +
     
     'vec3 sharpenAdjust(vec3 color) {\n' +
@@ -137,17 +156,6 @@ var FSHADER_SOURCE =
     '        return color;\n' +
     '    }\n' +
     '}\n' +
-    /*
-    Filtrr2.Util.normalize(255 * Math.pow(Filtrr2.Util.normalize(rgba.r, 0, 255, ib, iw)/255, 1/gm), ob, ow, 0, 255);}
-    
-    'uniform float u_InputMinStage;\n' +
-    'uniform float u_InputMaxStage;\n' +
-    'uniform float u_Gamma;\n' +
-    'uniform float u_OutputMinStage;\n' +
-    'uniform float u_OutputMaxStage;\n' +
-    */
-    
-    //Filtrr2.Util.normalize(255 * Math.pow(Filtrr2.Util.normalize(rgba.r, 0, 255, ib, iw)/255, 1/gm), ob, ow, 0, 255);}
     
     'vec3 myNormalize(vec3 val, float dmin, float dmax, float smin, float smax) {\n' +
     '    float sdist = sqrt((smin - smax) * (smin - smax));\n' +
@@ -166,7 +174,7 @@ var FSHADER_SOURCE =
     '   vec3 color = texture2D(u_Sampler, v_TexCoord).xyz * 255.0;\n' + 
     '   color = brightAdjust(color);  \n' +
     '   color = contrastAdjust(color);  \n' +
-    '   color = saturationAdjust(color, u_Saturation / 100.0);  \n' +
+    '   color = hslAdjustment(color);  \n' +
     '   color = sharpenAdjust(color);  \n' +
     '   color = stageAdjust(color);  \n' +
     '   gl_FragColor = vec4(color / 255.0, 1.0);\n' +
@@ -195,10 +203,24 @@ function onContrastChanged(value)
     updateCanvas();
 }
 
+function onHueChanged(value)
+{
+    document.getElementById("hue").innerHTML = value;
+    gl.uniform1f(u_Hue, value);
+    updateCanvas();
+}
+
 function onSaturationChanged(value)
 {
     document.getElementById("saturation").innerHTML = value;
     gl.uniform1f(u_Saturation, value);
+    updateCanvas();
+}
+
+function onLightnessChanged(value)
+{
+    document.getElementById("lightness").innerHTML = value;
+    gl.uniform1f(u_Lightness, value);
     updateCanvas();
 }
 
@@ -352,9 +374,21 @@ function initTextures() {
     return false;
   }
 
+  u_Hue = gl.getUniformLocation(gl.program, 'u_Hue');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Hue');
+    return false;
+  }
+  
   u_Saturation = gl.getUniformLocation(gl.program, 'u_Saturation');
   if (!u_Sampler) {
     console.log('Failed to get the storage location of u_Saturation');
+    return false;
+  }
+  
+  u_Lightness = gl.getUniformLocation(gl.program, 'u_Lightness');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Lightness');
     return false;
   }
 
@@ -369,6 +403,7 @@ function initTextures() {
     console.log('Failed to get the storage location of u_InvSize');
     return false;
   }
+  
   u_Template = gl.getUniformLocation(gl.program, 'u_Template');
   if (!u_Sampler) {
     console.log('Failed to get the storage location of u_Template');
@@ -430,7 +465,9 @@ function initTextures() {
                     gl.uniform1i(u_Sampler, 0);
                     gl.uniform1f(u_Brightness, 0);
                     gl.uniform1f(u_Contrast, 0);
+                    gl.uniform1f(u_Hue, 0);
                     gl.uniform1f(u_Saturation, 0);
+                    gl.uniform1f(u_Lightness, 0);
                     gl.uniform1i(u_Sharpen, 0);
                     gl.uniform2f(u_InvSize, 1 / image.width, 1/ image.height);
                     gl.uniform1fv(u_Template, [-1, -4, -7, -4, -1,   
