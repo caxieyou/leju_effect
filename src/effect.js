@@ -170,8 +170,8 @@ var FSHADER_SOURCE =
     '}\n' +
     
     'void main() {\n' +
-    
     '   vec3 color = texture2D(u_Sampler, v_TexCoord).xyz * 255.0;\n' + 
+    
     '   color = brightAdjust(color);  \n' +
     '   color = contrastAdjust(color);  \n' +
     '   color = hslAdjustment(color);  \n' +
@@ -181,13 +181,24 @@ var FSHADER_SOURCE =
     
     '}\n';
     
-    
+
 var gl;
 var n;
 var texture;
 var u_Sampler;
 var u_Brightness;
 var u_Contrast;
+var u_Hue;
+var u_Saturation;
+var u_Lightness;
+var u_InputMinStage;
+var u_InputMaxStage;
+var u_Gamma;
+var u_OutputMinStage;
+var u_OutputMaxStage;
+var u_Sharpen;
+var u_InvSize;
+var u_Template;
 
 function onBrightnessChanged(value)
 {
@@ -223,7 +234,6 @@ function onLightnessChanged(value)
     gl.uniform1f(u_Lightness, value);
     updateCanvas();
 }
-
 
 function onInputStageMinChanged(value)
 {
@@ -262,14 +272,8 @@ function onOutputStageMaxChanged(value)
     
 function onSharpenChecked(value)
 {
-    if(value) {
-        gl.uniform1i(u_Sharpen, 1);
-        updateCanvas();
-    } else {
-        gl.uniform1i(u_Sharpen, 0);
-        updateCanvas();
-        //do nothing
-    }
+    gl.uniform1i(u_Sharpen, value ? 1: 0);
+    updateCanvas();
 }
 
 function main() {
