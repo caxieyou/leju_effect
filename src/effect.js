@@ -175,8 +175,8 @@ var FSHADER_SOURCE =
     '   color = brightAdjust(color);  \n' +
     '   color = contrastAdjust(color);  \n' +
     '   color = hslAdjustment(color);  \n' +
-    '   color = sharpenAdjust(color);  \n' +
     '   color = stageAdjust(color);  \n' +
+    '   color = sharpenAdjust(color);  \n' +
     '   gl_FragColor = vec4(color / 255.0, 1.0);\n' +
     
     '}\n';
