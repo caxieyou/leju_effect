@@ -11,9 +11,9 @@ var VSHADER_SOURCE =
 
 // Fragment shader program
 var FSHADER_SOURCE =
-    //'#ifdef GL_ES\n' +
+    '#ifdef GL_ES\n' +
     'precision mediump float;\n' +
-    //'#endif\n' +
+    '#endif\n' +
     'uniform float u_Brightness;\n' +
     'uniform float u_Contrast;\n' +
     'uniform float u_Hue;\n' +
@@ -31,25 +31,13 @@ var FSHADER_SOURCE =
     'uniform sampler2D u_Sampler;\n' +
     'varying vec2 v_TexCoord;\n' +
     
+    'bool isEqual(float a , float b) {\n' +
+    '    return abs(a- b) < 0.00001;\n' +
+    '}\n' +
+    
     'vec3 brightAdjust(vec3 color) {\n' +
-    '    vec2 c2 = vec2(185.0 - u_Brightness, 185.0 + u_Brightness); \n' +
-    '    vec3 vt;\n' +
-    '    float t= 0.0; \n' +
-    '    for (int i = 1; i < 1024; i++){\n' +
-    '        t += 0.0009765625;\n' +
-    '        float a =  (c2.x * ((-3.0 * t * t + 3.0 * t) + 255.0 * (1.0-t) * (1.0-t) * (1.0-t)));\n' +
-    '        if (abs(a - color.r) < 1.0) {\n' +
-    '            vt.x = t;\n' +
-    '        }\n' +
-    '        if (abs(a - color.g) < 1.0) {\n' +
-    '            vt.y = t;\n' +
-    '        }\n' +
-    '        if (abs(a - color.b) < 1.0) {\n' +
-    '            vt.z = t;\n' +
-    '        }\n' +
-    '    }\n' +
-    '    color = (c2.y * ((-3.0 * vt * vt + 3.0 * vt) + 255.0 * (1.0-vt) * (1.0-vt) * (1.0-vt)));\n' +
-    '    return color; \n' +
+    '    color += u_Brightness; \n ' +
+    '    return clamp(color, 0.0, 255.0);\n' +
     '}\n' +
     
     'vec3 contrastAdjust(vec3 color) {\n' +
@@ -57,106 +45,73 @@ var FSHADER_SOURCE =
     '   if (u_Contrast > 0.0 && u_Contrast < 255.0) {\n' +
     '     cv = 1.0 / (1.0 - cv) - 1.0;  \n' +
     '   }\n' +
-    '   color = clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
-    '   return color;\n' +
+    '   return clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
     '}\n' +
     
-
-    'vecc lightnesAdjust(vec3 color) {\n' +
-    '    float ratio = u_Lightness / 100.0; \n' + 
-    '    if (u_Lightness >= 0.0) {\n' +
-    '        color = color + (255.0 - color) * ratio;\n' +
+    'vec4 rgba2hsla (vec3 color) {\n' +
+    '    color = color / 255.0;\n' +
+    '    float _max = max(color.r, max(color.g, color.b));\n' +
+    '    float _min = min(color.r, min(color.g, color.b));\n' +
+    '    float h, s;\n' +
+    '    float l = (_max + _min) / 2.0;\n' +
+        
+    '    if (isEqual(_max, _min)) {\n' +
+    '        h = s = 1.0;\n' +
     '    } else {\n' +
-    '        color = color + color * ratio;\n' +
-    '    }  \n' +
-    '    return color;\n' +
+    '        float d = _max - _min;\n' +
+    '        s = l > 0.5 ? d / (2.0 - _max - _min) : d / (_max + _min);\n' +
+    '        if (isEqual(_max, color.r)) {\n' +
+    '            h = (color.g - color.b) / d + (color.g < color.b ? 6.0 : 0.0);\n' +
+    '       } else if (isEqual(_max, color.g)) {\n' +
+    '            h = (color.b - color.r) / d + 2.0;\n' +
+    '        } else {\n' +
+    '            h = (color.r - color.b) / d + 4.0;\n' +
+    '        }\n' +
+    '        h /= 6.0;\n' +
+    '    }\n' +
+    '    return clamp(vec4(h, s, l, 1.0), 0.0, 1.0);\n' +
+        
     '}\n' +
     
-    vecc hueAndsaturationAdjust(vec3 color) {
-
-        if (intR < intG)  
-            SwapRGB(intR, intG);  
-        if (intR < intB)  
-            SwapRGB(intR, intB);  
-        if (intB > intG)  
-            SwapRGB(intB, intG);  
-      
-        int delta = intR - intB;  
-        if (!delta) return;  
-      
-        int entire = intR + intB;  
-        int H, S, L = entire >> 1;  
-        if (L < 128)  
-            S = delta * 255 / entire;  
-        else  
-            S = delta * 255 / (510 - entire);  
-        if (hValue)  
-        {  
-            if (intR == R)  
-                H = (G - B) * 60 / delta;  
-            else if (intR == G)  
-                H = (B - R) * 60 / delta + 120;  
-            else  
-                H = (R - G) * 60 / delta + 240;  
-            H += hValue;  
-            if (H < 0) H += 360;  
-            else if (H > 360) H -= 360;  
-            int index = H / 60;  
-            int extra = H % 60;  
-            if (index & 1) extra = 60 - extra;  
-            extra = (extra * 255 + 30) / 60;  
-            intG = extra - (extra - 128) * (255 - S) / 255;  
-            int Lum = L - 128;  
-            if (Lum > 0)  
-                intG += (((255 - intG) * Lum + 64) / 128);  
-            else if (Lum < 0)  
-                intG += (intG * Lum / 128);  
-            CheckRGB(intG);  
-            switch (index)  
-            {  
-                case 1:  
-                    SwapRGB(intR, intG);  
-                    break;  
-                case 2:  
-                    SwapRGB(intR, intB);  
-                    SwapRGB(intG, intB);  
-                    break;  
-                case 3:  
-                    SwapRGB(intR, intB);  
-                    break;  
-                case 4:  
-                    SwapRGB(intR, intG);  
-                    SwapRGB(intG, intB);  
-                    break;  
-                case 5:  
-                    SwapRGB(intG, intB);  
-                    break;  
-            }  
-        }  
-        else  
-        {  
-            intR = R;  
-            intG = G;  
-            intB = B;  
-        }  
-        if (sValue)  
-        {  
-            if (sValue > 0)  
-            {  
-                sValue = sValue + S >= 255? S: 255 - sValue;  
-                sValue = 65025 / sValue - 255;  
-            }  
-            intR += ((intR - L) * sValue / 255);  
-            intG += ((intG - L) * sValue / 255);  
-            intB += ((intB - L) * sValue / 255);  
-        }  
-        return color;
-    }
+    'float hue2rgb(float p, float q, float t){\n' +
+    '    if(t < 0.0) \n' +
+    '        t += 1.0;\n' +
+        
+    '    if(t > 1.0) \n' +
+    '        t -= 1.0;\n' +
+    '    if(t <= 1.0 / 6.0) \n' +
+    '        return p + (q - p) * 6.0 * t;\n' +
+        
+    '    if(t <= 1.0 / 2.0) \n' +
+    '        return q;\n' +
+        
+    '    if(t <= 2.0 / 3.0) \n' +
+    '        return p + (q - p) * (2.0/3.0 - t) * 6.0;\n' +
+    '    return p;\n' +
+    '}\n' +
+        
+    'vec3  hsla2rgba (vec4 hsla) {\n' +
+    '    if (isEqual(hsla.g, 0.0)) {\n' +
+    '        return vec3(hsla.b);\n' +
+    '    } else {\n' +
+    '        vec3 color;\n' +
+    '        float q = hsla.b < 0.5 ? hsla.b * (1.0 + hsla.g) : hsla.b + hsla.g - hsla.b * hsla.g;\n' +
+    '        float p = 2.0 * hsla.b - q;\n' +
+    '        color.r = hue2rgb(p, q, hsla.r + 1.0 / 3.0);\n' +
+    '        color.g = hue2rgb(p, q, hsla.r);\n' +
+    '        color.b = hue2rgb(p, q, hsla.r - 1.0 / 3.0);\n' +
+    '        return color * 255.0;\n' +
+    '    }\n' +
+    '}\n' +
     
-    'vec3 hslAdjustment(color) { \n' +
-    '    color = hueAndsaturationAdjust(color);\n' +
-    '    color = lightnesAdjust(color);\n' +
-    '    return color;\n' +
+    'vec3 hslAdjustment(vec3 color) { \n' +
+    '    vec3 hsl_param = vec3(u_Hue / 180.0, u_Saturation / 100.0, u_Lightness / 100.0); \n' +
+    '    vec4 hsla = rgba2hsla(color);\n' +
+    '    hsla.r += hsl_param.r * hsla.r;\n' +
+    '    hsla.g += hsl_param.g * hsla.g;\n' +
+    '    hsla.b += hsl_param.b * hsla.b;\n' +
+    '    color = hsla2rgba(hsla);\n' +
+    '    return clamp(color, 0.0, 255.0);\n' +
     '}\n' +
     
     'vec3 sharpenAdjust(vec3 color) {\n' +
@@ -219,7 +174,6 @@ var FSHADER_SOURCE =
     '   vec3 color = texture2D(u_Sampler, v_TexCoord).xyz * 255.0;\n' + 
     '   color = brightAdjust(color);  \n' +
     '   color = contrastAdjust(color);  \n' +
-    //'   color = saturationAdjust(color, u_Saturation / 100.0);  \n' +
     '   color = hslAdjustment(color);  \n' +
     '   color = sharpenAdjust(color);  \n' +
     '   color = stageAdjust(color);  \n' +
