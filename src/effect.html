@@ -11,7 +11,7 @@
     </canvas>
     <p>
       <span >亮度 </span>
-      <input type="range" min="-150" max="150" value="0" onchange="onBrightnessChanged(this.value)"/>
+      <input type="range" min="-100" max="100" value="0" onchange="onBrightnessChanged(this.value)"/>
       <span id="brightness">0</span>
     </p>
     
@@ -22,16 +22,61 @@
     </p>
     
     <p>
+      <span >色相</span>
+      <input type="range" min="-180" max="180" value="0" onchange="onHueChanged(this.value)"/>
+      <span id="hue">0</span>
+    </p>
+    
+    <p>
       <span >饱和度</span>
-      <input type="range" min="-50" max="100" value="0" onchange="onSaturationChanged(this.value)"/>
+      <input type="range" min="-99" max="100" value="0" onchange="onSaturationChanged(this.value)"/>
       <span id="saturation">0</span>
     </p>
     
     <p>
+      <span >明度</span>
+      <input type="range" min="-100" max="100" value="0" onchange="onLightnessChanged(this.value)"/>
+      <span id="lightness">0</span>
+    </p>
+    
+    <p>
+      <span >色阶</span>
+    </p>
+    
+    <p>
+    <span >输入色阶Min</span>
+    <input type="range" min="0" max="255" value="0" onchange="onInputStageMinChanged(this.value)"/>
+    <span id="inputMinStage">0</span>
+    </p>
+    
+    <p>
+    <span >输入色阶Max</span>
+    <input type="range" min="0" max="255" value="255" onchange="onInputStageMaxChanged(this.value)"/>
+    <span id="inputMaxStage">255</span>
+    </p>
+    
+    <p>
+    <span >gamma校正</span>
+    <input type="range" min="0.01" max="9.99" value="1" onchange="onGammaChanged(this.value)"/>
+    <span id="gamma">1</span>
+    </p>
+    
+    <p>
+    <span >输出色阶Min</span>
+    <input type="range" min="0" max="255" value="0" onchange="onOutputStageMinChanged(this.value)"/>
+    <span id="outputMinStage">0</span>
+    </p>
+    
+    <p>
+    <span >输出色阶Max</span>
+    <input type="range" min="0" max="255" value="255" onchange="onOutputStageMaxChanged(this.value)"/>
+    <span id="outputMaxStage">255</span>
+    </p>
+
+    <p>
       <span >锐化</span>
       <input type="checkbox" onchange="onSharpenChecked(this.checked)"/>
     </p>
-    
     
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>
