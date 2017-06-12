@@ -26,11 +26,11 @@ void main() {
     float amount = (contrast < 0.0) ? contrast / 2.0 : contrast;
 
     vec3 base = col.rgb * matRGBtoROMM;
-  vec3 blend = mix(vec3(0.5), base, amount * col.a);
-  // overlay blend
-  vec3 res = mix(2.0 * base * blend, 1.0 - 2.0 * (1.0 - base) * (1.0 - blend), step(0.5, base));
+    vec3 blend = mix(vec3(0.5), base, amount * col.a);
+    // overlay blend
+    vec3 res = mix(2.0 * base * blend, 1.0 - 2.0 * (1.0 - base) * (1.0 - blend), step(0.5, base));
 
-  res = res * matROMMtoRGB;
+    res = res * matROMMtoRGB;
 
     gl_FragColor = vec4(res, col.a);
 
