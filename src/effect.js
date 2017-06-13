@@ -11,9 +11,9 @@ var VSHADER_SOURCE =
 
 // Fragment shader program
 var FSHADER_SOURCE =
-    '#ifdef GL_ES\n' +
-    'precision mediump float;\n' +
-    '#endif\n' +
+    //'#ifdef GL_ES\n' +
+    'precision highp float;\n' +
+    //'#endif\n' +
     'uniform float u_Brightness;\n' +
     'uniform float u_Contrast;\n' +
     'uniform float u_Hue;\n' +
@@ -48,69 +48,99 @@ var FSHADER_SOURCE =
     '   return clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
     '}\n' +
     
-    'vec4 rgba2hsla (vec3 color) {\n' +
-    '    color = color / 255.0;\n' +
-    '    float _max = max(color.r, max(color.g, color.b));\n' +
-    '    float _min = min(color.r, min(color.g, color.b));\n' +
-    '    float h, s;\n' +
-    '    float l = (_max + _min) / 2.0;\n' +
+    'vec3 RGBToHSL(vec3 color) \n' +
+    '{\n' +
+    '  color = color / 255.0;\n' +
+    '  vec3 hsl; \n' +
+      
+    '  float fmin = min(min(color.r, color.g), color.b);    \n' +
+    '  float fmax = max(max(color.r, color.g), color.b);    \n' +
+    '  float delta = fmax - fmin;             \n' +
+
+    '  hsl.z = (fmax + fmin) / 2.0; \n' +
+
+    '  if (delta == 0.0)   \n' +
+    '  {\n' +
+    '    hsl.x = 0.0;  \n' +
+    '    hsl.y = 0.0;  \n' +
+    '  }\n' +
+    '  else                                    \n' +
+    '  {\n' +
+    '    if (hsl.z < 0.5)\n' +
+    '      hsl.y = delta / (fmax + fmin); \n' +
+    '    else \n' +
+    '      hsl.y = delta / (2.0 - fmax - fmin); \n' +
         
-    '    if (isEqual(_max, _min)) {\n' +
-    '        h = s = 1.0;\n' +
-    '    } else {\n' +
-    '        float d = _max - _min;\n' +
-    '        s = l > 0.5 ? d / (2.0 - _max - _min) : d / (_max + _min);\n' +
-    '        if (isEqual(_max, color.r)) {\n' +
-    '            h = (color.g - color.b) / d + (color.g < color.b ? 6.0 : 0.0);\n' +
-    '       } else if (isEqual(_max, color.g)) {\n' +
-    '            h = (color.b - color.r) / d + 2.0;\n' +
-    '        } else {\n' +
-    '            h = (color.r - color.b) / d + 4.0;\n' +
-    '        }\n' +
-    '        h /= 6.0;\n' +
-    '    }\n' +
-    '    return clamp(vec4(h, s, l, 1.0), 0.0, 1.0);\n' +
-        
+    '    float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;\n' +
+    '    float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;\n' +
+    '    float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;\n' +
+
+    '    if (color.r == fmax )\n' +
+    '      hsl.x = deltaB - deltaG; \n' +
+    '    else if (color.g == fmax)\n' +
+    '      hsl.x = (1.0 / 3.0) + deltaR - deltaB; \n' +
+    '    else if (color.b == fmax)\n' +
+    '      hsl.x = (2.0 / 3.0) + deltaG - deltaR; \n' +
+
+    '    if (hsl.x < 0.0)\n' +
+    '      hsl.x += 1.0; \n' +
+    '    else if (hsl.x > 1.0)\n' +
+    '      hsl.x -= 1.0; \n' +
+    '  }\n' +
+
+    '  return clamp(hsl,0.0,1.0);\n' +
     '}\n' +
     
-    'float hue2rgb(float p, float q, float t){\n' +
-    '    if(t < 0.0) \n' +
-    '        t += 1.0;\n' +
-        
-    '    if(t > 1.0) \n' +
-    '        t -= 1.0;\n' +
-    '    if(t <= 1.0 / 6.0) \n' +
-    '        return p + (q - p) * 6.0 * t;\n' +
-        
-    '    if(t <= 1.0 / 2.0) \n' +
-    '        return q;\n' +
-        
-    '    if(t <= 2.0 / 3.0) \n' +
-    '        return p + (q - p) * (2.0/3.0 - t) * 6.0;\n' +
-    '    return p;\n' +
+    'float HueToRGB(float f1, float f2, float hue)\n' +
+    '{\n' +
+    '  if (hue < 0.0)\n' +
+    '    hue += 1.0;\n' +
+    '  else if (hue > 1.0)\n' +
+    '    hue -= 1.0;\n' +
+    '  float res;\n' +
+    '  if ((6.0 * hue) < 1.0)\n' +
+    '    res = f1 + (f2 - f1) * 6.0 * hue;\n' +
+    '  else if ((2.0 * hue) < 1.0)\n' +
+    '    res = f2;\n' +
+    '  else if ((3.0 * hue) < 2.0)\n' +
+    '    res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;\n' +
+    '  else\n' +
+    '    res = f1;\n' +
+    '  return res;\n' +
     '}\n' +
+
+    'vec3 HSLToRGB(vec3 hsl)\n' +
+    '{\n' +
+    '  vec3 rgb;\n' +
+      
+    '  if (hsl.y == 0.0)\n' +
+    '    rgb = vec3(hsl.z); \n' +
+    '  else\n' +
+    '  {\n' +
+    '    float f2;\n' +
         
-    'vec3  hsla2rgba (vec4 hsla) {\n' +
-    '    if (isEqual(hsla.g, 0.0)) {\n' +
-    '        return vec3(hsla.b);\n' +
-    '    } else {\n' +
-    '        vec3 color;\n' +
-    '        float q = hsla.b < 0.5 ? hsla.b * (1.0 + hsla.g) : hsla.b + hsla.g - hsla.b * hsla.g;\n' +
-    '        float p = 2.0 * hsla.b - q;\n' +
-    '        color.r = hue2rgb(p, q, hsla.r + 1.0 / 3.0);\n' +
-    '        color.g = hue2rgb(p, q, hsla.r);\n' +
-    '        color.b = hue2rgb(p, q, hsla.r - 1.0 / 3.0);\n' +
-    '        return color * 255.0;\n' +
-    '    }\n' +
+    '    if (hsl.z < 0.5)\n' +
+    '      f2 = hsl.z * (1.0 + hsl.y);\n' +
+    '    else\n' +
+    '      f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);\n' +
+          
+    '    float f1 = 2.0 * hsl.z - f2;\n' +
+        
+    '    rgb.r = HueToRGB(f1, f2, hsl.x + (1.0/3.0));\n' +
+    '    rgb.g = HueToRGB(f1, f2, hsl.x);\n' +
+    '    rgb.b = HueToRGB(f1, f2, hsl.x - (1.0/3.0));\n' +
+    '  }\n' +
+      
+    '  return rgb;\n' +
     '}\n' +
     
     'vec3 hslAdjustment(vec3 color) { \n' +
     '    vec3 hsl_param = vec3(u_Hue / 180.0, u_Saturation / 100.0, u_Lightness / 100.0); \n' +
-    '    vec4 hsla = rgba2hsla(color);\n' +
-    '    hsla.r += hsl_param.r * hsla.r;\n' +
-    '    hsla.g += hsl_param.g * hsla.g;\n' +
-    '    hsla.b += hsl_param.b * hsla.b;\n' +
-    '    color = hsla2rgba(hsla);\n' +
+    '    vec3 hsl = RGBToHSL(color);\n' +
+    '    hsl.r += hsl_param.r * hsl.r;\n' +
+    '    hsl.g += hsl_param.g * hsl.g;\n' +
+    '    hsl.b += hsl_param.b * hsl.b;\n' +
+    '    color = HSLToRGB(hsl) * 255.0;\n' +
     '    return clamp(color, 0.0, 255.0);\n' +
     '}\n' +
     
@@ -451,6 +481,29 @@ function initTextures() {
   }
   // Register the event handler to be called on loading an image
   image.onload = function(){ 
+  
+                    //Do the preprocess work
+                    var canvas = document.createElement('canvas');
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+                    
+                    var pixelData = canvas.getContext('2d').getImageData(0, 0, image.width, image.height).data;
+                    // do the image analysis
+                    
+                    
+                    
+                    var data = new Uint8Array(image.width * image.height * 3);
+                    
+                    for (var i = 0; i < image.width * image.height; i++) {
+                        data[i*3] = 0;
+                        data[i*3 + 1] = 0;
+                        data[i*3 + 2] = 255;
+                        //data[i*4 + 3] = 255;
+                    }
+                    
+                    
+                    
                     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
                     // Enable texture unit0
                     gl.activeTexture(gl.TEXTURE0);
@@ -464,6 +517,8 @@ function initTextures() {
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     // Set the texture image
                     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+                    
+                    //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, image.width, image.height, 0, gl.RGB, gl.UNSIGNED_BYTE, data);
                       
                     // Set the texture unit 0 to the sampler
                     gl.uniform1i(u_Sampler, 0);
