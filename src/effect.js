@@ -1,4 +1,4 @@
-// TexturedQuad.js (c) 2012 matsuda and kanda
+console.log(xxxx);
 // Vertex shader program
 var VSHADER_SOURCE =
     'attribute vec4 a_Position;\n' +
@@ -567,7 +567,7 @@ function initTextures() {
                     //console.log(res);
                     
                     
-                    var res2 = colorBalance(0, 50, 0, BALANCE_MODE.MIDTONES);
+                    var res2 = colorBalance(0, 0, 0, BALANCE_MODE.MIDTONES);
                     
                     
                     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
