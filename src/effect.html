@@ -77,11 +77,35 @@
       <span >锐化</span>
       <input type="checkbox" onchange="onSharpenChecked(this.checked)"/>
     </p>
+
+    <p>
+      <span >色彩平衡</span>
+    </p>
+    
+    <p>
+    <span >青色</span>
+    <input type="range" min="-100" max="100" value="0" onchange="onCyanChanged(this.value)"/>
+    <span id="cyan">0</span>
+    </p>
+    
+    <p>
+    <span >洋红</span>
+    <input type="range" min="-100" max="100" value="0" onchange="onMagentaChanged(this.value)"/>
+    <span id="magenta">0</span>
+    </p>
+    
+    <p>
+    <span >黄色</span>
+    <input type="range" min="-100" max="100" value="0" onchange="onYellowChanged(this.value)"/>
+    <span id="yellow">0</span>
+    </p>
     
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>
     <script src="../lib/cuon-utils.js"></script>
     <script src="../lib/cuon-matrix.js"></script>
+    <script src="shader_utility.js"></script>
+    <script src="preprocess_utility.js"></script>
     <script src="effect.js"></script>
   </body>
 </html>
