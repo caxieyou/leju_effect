@@ -1,248 +1,15 @@
-console.log(xxxx);
+
+
 // Vertex shader program
-var VSHADER_SOURCE =
-    'attribute vec4 a_Position;\n' +
-    'attribute vec2 a_TexCoord;\n' +
-    'varying vec2 v_TexCoord;\n' +
-    'void main() {\n' +
-    '  gl_Position = a_Position;\n' +
-    '  v_TexCoord = a_TexCoord;\n' +
-    '}\n';
+var VSHADER_SOURCE = v_shader_main;
+
 
 // Fragment shader program
-var FSHADER_SOURCE =
-    //'#ifdef GL_ES\n' +
-    'precision highp float;\n' +
-    //'#endif\n' +
-    'uniform float u_Brightness;\n' +
-    'uniform float u_Contrast;\n' +
-    'uniform float u_Hue;\n' +
-    'uniform float u_Saturation;\n' +
-    'uniform float u_Lightness;\n' +
-    'uniform int u_Sharpen;\n' +
-    'uniform int u_PreserveLuminosity;\n' +
-    'uniform vec2 u_InvSize;\n' +
-    'uniform float u_Template[25];\n' +
-    'uniform float u_InputMinStage;\n' +
-    'uniform float u_InputMaxStage;\n' +
-    'uniform float u_Gamma;\n' +
-    'uniform float u_OutputMinStage;\n' +
-    'uniform float u_OutputMaxStage;\n' +
-    
-    'uniform sampler2D u_Sampler;\n' +
-    'uniform sampler2D u_SamplerCurve; \n' +
-    'uniform sampler2D u_SamplerColorBalance; \n' +
-    'varying vec2 v_TexCoord;\n' +
-    
-    'bool isEqual(float a , float b) {\n' +
-    '    return abs(a- b) < 0.00001;\n' +
-    '}\n' +
-    
-    'vec3 brightAdjust(vec3 color) {\n' +
-    '    color += u_Brightness; \n ' +
-    '    return clamp(color, 0.0, 255.0);\n' +
-    '}\n' +
-    
-    'vec3 contrastAdjust(vec3 color) {\n' +
-    '   float cv = u_Contrast / 255.0;  \n' +
-    '   if (u_Contrast > 0.0 && u_Contrast < 255.0) {\n' +
-    '     cv = 1.0 / (1.0 - cv) - 1.0;  \n' +
-    '   }\n' +
-    '   return clamp(color + ((color - 121.0) * cv + 0.5), 0.0, 255.0);  \n' +
-    '}\n' +
-    
-    'vec3 RGBToHSL(vec3 color) \n' +
-    '{\n' +
-    '  color = color / 255.0;\n' +
-    '  vec3 hsl; \n' +
-      
-    '  float fmin = min(min(color.r, color.g), color.b);    \n' +
-    '  float fmax = max(max(color.r, color.g), color.b);    \n' +
-    '  float delta = fmax - fmin;             \n' +
-
-    '  hsl.z = (fmax + fmin) / 2.0; \n' +
-
-    '  if (delta == 0.0)   \n' +
-    '  {\n' +
-    '    hsl.x = 0.0;  \n' +
-    '    hsl.y = 0.0;  \n' +
-    '  }\n' +
-    '  else                                    \n' +
-    '  {\n' +
-    '    if (hsl.z < 0.5)\n' +
-    '      hsl.y = delta / (fmax + fmin); \n' +
-    '    else \n' +
-    '      hsl.y = delta / (2.0 - fmax - fmin); \n' +
-        
-    '    float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;\n' +
-    '    float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;\n' +
-    '    float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;\n' +
-
-    '    if (color.r == fmax )\n' +
-    '      hsl.x = deltaB - deltaG; \n' +
-    '    else if (color.g == fmax)\n' +
-    '      hsl.x = (1.0 / 3.0) + deltaR - deltaB; \n' +
-    '    else if (color.b == fmax)\n' +
-    '      hsl.x = (2.0 / 3.0) + deltaG - deltaR; \n' +
-
-    '    if (hsl.x < 0.0)\n' +
-    '      hsl.x += 1.0; \n' +
-    '    else if (hsl.x > 1.0)\n' +
-    '      hsl.x -= 1.0; \n' +
-    '  }\n' +
-
-    '  return clamp(hsl,0.0,1.0);\n' +
-    '}\n' +
-    
-    'float HueToRGB(float f1, float f2, float hue)\n' +
-    '{\n' +
-    '  if (hue < 0.0)\n' +
-    '    hue += 1.0;\n' +
-    '  else if (hue > 1.0)\n' +
-    '    hue -= 1.0;\n' +
-    '  float res;\n' +
-    '  if ((6.0 * hue) < 1.0)\n' +
-    '    res = f1 + (f2 - f1) * 6.0 * hue;\n' +
-    '  else if ((2.0 * hue) < 1.0)\n' +
-    '    res = f2;\n' +
-    '  else if ((3.0 * hue) < 2.0)\n' +
-    '    res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;\n' +
-    '  else\n' +
-    '    res = f1;\n' +
-    '  return res;\n' +
-    '}\n' +
-
-    'vec3 HSLToRGB(vec3 hsl)\n' +
-    '{\n' +
-    '  vec3 rgb;\n' +
-      
-    '  if (hsl.y == 0.0)\n' +
-    '    rgb = vec3(hsl.z); \n' +
-    '  else\n' +
-    '  {\n' +
-    '    float f2;\n' +
-        
-    '    if (hsl.z < 0.5)\n' +
-    '      f2 = hsl.z * (1.0 + hsl.y);\n' +
-    '    else\n' +
-    '      f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);\n' +
-          
-    '    float f1 = 2.0 * hsl.z - f2;\n' +
-        
-    '    rgb.r = HueToRGB(f1, f2, hsl.x + (1.0/3.0));\n' +
-    '    rgb.g = HueToRGB(f1, f2, hsl.x);\n' +
-    '    rgb.b = HueToRGB(f1, f2, hsl.x - (1.0/3.0));\n' +
-    '  }\n' +
-      
-    '  return rgb* 255.0;\n' +
-    '}\n' +
-    
-    'vec3 hslAdjustment(vec3 color) { \n' +
-    '    vec3 hsl_param = vec3(u_Hue / 180.0, u_Saturation / 100.0, u_Lightness / 100.0); \n' +
-    '    vec3 hsl = RGBToHSL(color);\n' +
-    '    hsl.r += hsl_param.r * hsl.r;\n' +
-    '    hsl.g += hsl_param.g * hsl.g;\n' +
-    '    hsl.b += hsl_param.b * hsl.b;\n' +
-    '    color = HSLToRGB(hsl);\n' +
-    '    return clamp(color, 0.0, 255.0);\n' +
-    '}\n' +
-    
-    'vec3 sharpenAdjust(vec3 color) {\n' +
-    '    if(u_Sharpen <= 0) {\n' +
-    '        return color;\n' +
-    '    } else {\n' +
-    '        color = vec3(0.0);  \n' +
-    
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-2.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[0] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-1.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[1] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-0.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[2] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 1.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[3] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 2.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[4] ;  \n' +
-    
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-2.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[5] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-1.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[6] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 0.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[7] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 1.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[8] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 2.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[9] ;  \n' +
-    
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-2.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_Template[10] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_Template[11] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 0.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_Template[12] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_Template[13] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 2.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_Template[14] ;  \n' +
-    
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-2.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[15] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-1.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[16] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 0.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[17] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 1.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[18] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 2.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_Template[19] ;  \n' +
-    
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-2.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[20] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2(-1.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[21] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 0.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[22] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 1.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[23] ;  \n' +
-    '        color += texture2D(u_Sampler, v_TexCoord + vec2( 2.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_Template[24] ;  \n' +
-    
-    '        color /= 273.0;  \n' +
-    '        clamp(color, 0.0, 255.0);\n' +
-    
-    '        return color;\n' +
-    '    }\n' +
-    '}\n' +
-    
-    'vec3 myNormalize(vec3 val, float dmin, float dmax, float smin, float smax) {\n' +
-    '    float sdist = sqrt((smin - smax) * (smin - smax));\n' +
-    '    float ddist = sqrt((dmin - dmax) * (dmin - dmax));\n' +
-    '    float ratio = ddist / sdist; \n' +
-    '    val = clamp(val, smin, smax);\n' +
-    '    return dmin + (val-smin) * ratio;\n' +
-    '}\n' +
-    
-    'vec3 stageAdjust(vec3 color) {\n' +
-    '   return color = myNormalize(255.0 * pow(myNormalize(color, 0.0, 255.0, u_InputMinStage, u_InputMaxStage) / 255.0, vec3(1.0 / u_Gamma)),u_OutputMinStage, u_OutputMaxStage, 0.0, 255.0);\n' +
-    '}\n' +
-    
-    'vec3 mapColor(vec3 color, sampler2D texSample) {\n' +
-        
-    '    color.r = texture2D(texSample, vec2(color.r / 255.0, color.r / 255.0)).r * 255.0;\n' +
-    '    color.g = texture2D(texSample, vec2(color.g / 255.0, color.g / 255.0)).g * 255.0;\n' +
-    '    color.b = texture2D(texSample, vec2(color.b / 255.0, color.b / 255.0)).b * 255.0;\n' +
-    '    return color;\n' +
-    '}\n' +
-    
-    'float RGB2HSL_L(vec3 color) {\n' +
-    '    float _min, _max;\n' +
-    '     _max = max(max(color.r, color.g), color.b);\n' +
-    '     _min = min(min(color.r, color.g), color.b);\n' +
-    
-    '    return color.b;\n' +
-    '    return clamp(((_max + _min) / 2.0), 0.0, 1.0);\n' +
-    '}\n' +
-    
-    'vec3 colorBalance(vec3 color, sampler2D texSample){\n' +
-    '    if (u_PreserveLuminosity > 0) {\n' +
-    '        vec3 colorMap = mapColor(color, texSample);\n' +
-    '        vec3 colorMapHSL = RGBToHSL(colorMap);\n' +
-    '        vec3 colorHSL    = RGBToHSL(color);\n' +
-    '        colorMapHSL.b    =  colorHSL.b; \n  ' +
-    '        return HSLToRGB(colorMapHSL);\n' +
-    '    } else{\n' +
-    '        return mapColor(color, texSample);\n' +
-    '    }\n' +
-    '}\n' +
-    
-    'void main() {\n' +
-    '   vec3 color = texture2D(u_Sampler, v_TexCoord).xyz * 255.0; \n' +
-    '   color = brightAdjust(color);  \n' +
-    '   color = contrastAdjust(color);  \n' +
-    '   color = hslAdjustment(color);  \n' +
-    '   color = stageAdjust(color);  \n' +
-    '   color = sharpenAdjust(color);  \n' +
-    '   color = mapColor(color, u_SamplerCurve);\n' +
-    '   color = colorBalance(color, u_SamplerColorBalance);\n' +
-    '   gl_FragColor = vec4(color/ 255.0, 1.0);\n' +
-    
-    '}\n';
+var FSHADER_SOURCE = f_shader_header    + 
+                     f_uniform_list     +
+                     f_varying_list     +
+                     f_func_list        +
+                     f_func_main;
     
 
 var gl;
@@ -250,7 +17,7 @@ var n;
 var texture;
 var textureMap;
 var textureColorBalance;
-var u_Sampler;
+var u_SampleImage;
 var u_SamplerCurve;
 var u_SamplerColorBalance;
 var u_Brightness;
@@ -266,7 +33,7 @@ var u_OutputMaxStage;
 var u_Sharpen;
 var u_PreserveLuminosity
 var u_InvSize;
-var u_Template;
+var u_SharpenCov;
 
 function onBrightnessChanged(value)
 {
@@ -438,10 +205,10 @@ function initTextures() {
     console.log('Failed to create the texture object');
     return false;
   }
-  // Get the storage location of u_Sampler
-  u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
-  if (!u_Sampler) {
-    console.log('Failed to get the storage location of u_Sampler');
+  // Get the storage location of u_SampleImage
+  u_SampleImage = gl.getUniformLocation(gl.program, 'u_SampleImage');
+  if (!u_SampleImage) {
+    console.log('Failed to get the storage location of u_SampleImage');
     return false;
   }
 
@@ -505,9 +272,9 @@ function initTextures() {
     return false;
   }
   
-  u_Template = gl.getUniformLocation(gl.program, 'u_Template');
-  if (!u_Template) {
-    console.log('Failed to get the storage location of u_Template');
+  u_SharpenCov = gl.getUniformLocation(gl.program, 'u_SharpenCov');
+  if (!u_SharpenCov) {
+    console.log('Failed to get the storage location of u_SharpenCov');
     return false;
   }
 
@@ -567,7 +334,7 @@ function initTextures() {
                     //console.log(res);
                     
                     
-                    var res2 = colorBalance(0, 0, 0, BALANCE_MODE.MIDTONES);
+                    var res2 = colorBalanceAdjust(0, 0, 0, BALANCE_MODE.MIDTONES);
                     
                     
                     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
@@ -618,7 +385,7 @@ function initTextures() {
                     //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, image.width, image.height, 0, gl.RGB, gl.UNSIGNED_BYTE, data);
                       
                     // Set the texture unit 0 to the sampler
-                    gl.uniform1i(u_Sampler, 0);
+                    gl.uniform1i(u_SampleImage, 0);
                     gl.uniform1i(u_SamplerCurve, 1);
                     gl.uniform1i(u_SamplerColorBalance, 2);
                     gl.uniform1f(u_Brightness, 0);
@@ -629,7 +396,7 @@ function initTextures() {
                     gl.uniform1i(u_Sharpen, 0);
                     gl.uniform1i(u_PreserveLuminosity, 1);
                     gl.uniform2f(u_InvSize, 1 / image.width, 1/ image.height);
-                    gl.uniform1fv(u_Template, [-1, -4, -7, -4, -1,   
+                    gl.uniform1fv(u_SharpenCov, [-1, -4, -7, -4, -1,   
                                                 -4, -16, -26, -16, -4,   
                                                 -7, -26, 505, -26, -7,  
                                                 -4, -16, -26, -16, -4,   
@@ -755,7 +522,6 @@ function createCurve(points) {
         return colorMap;
     }
 
-    
     //if count of control points is 2, return linear output
     if (points.length === 2 ) {
         var delta_y = 0;
@@ -833,7 +599,7 @@ function createCurve(points) {
         }
     }
 
-	return colorMap;
+    return colorMap;
 }
 
 var BALANCE_MODE = {
@@ -842,14 +608,13 @@ var BALANCE_MODE = {
     HIGHLIGHTS: 2
 }
 
-function colorBalance(cyan, magenta, yellow, mode)
+function colorBalanceAdjust(cyan, magenta, yellow, mode)
 {
     //Make sure cyan, magenta, yellow are between -100 to 100
     
     var cyan_red = [0, 0, 0];
     var magenta_green = [0, 0, 0];
     var yellow_blue = [0, 0, 0];
-
     
     cyan_red[mode] = cyan;
     magenta_green[mode] = magenta;
