@@ -257,11 +257,11 @@ for (var i = 0; i < f_func_Array.length; i++) {
 
 var f_func_main =   'void main() {                                                      \n' +
                     '  vec3 color = texture2D(u_SampleImage, v_TexCoord).xyz * 255.0;   \n' +
+                    '       color = sharpenAdjust(color);                               \n' +
                     '       color = brightAdjust(color);                                \n' +
                     '       color = contrastAdjust(color);                              \n' +
                     '       color = hslAdjust(color);                                   \n' +
                     '       color = stageAdjust(color);                                 \n' +
-                    '       color = sharpenAdjust(color);                               \n' +
                     '       color = applyCurve(color, u_SamplerCurve);                  \n' +
                     '       color = colorBalanceAdjust(color, u_SamplerColorBalance);   \n' +
                     '   gl_FragColor = vec4(color/ 255.0, 1.0);                         \n' +
