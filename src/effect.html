@@ -74,8 +74,9 @@
     </p>
 
     <p>
-      <span >锐化</span>
-      <input type="checkbox" onchange="onSharpenChecked(this.checked)"/>
+    <span >锐化</span>
+    <input type="range" min="0" max="100" value="0" onchange="onSharpenChanged(this.value)"/>
+    <span id="sharpen">0</span>
     </p>
 
     <p>

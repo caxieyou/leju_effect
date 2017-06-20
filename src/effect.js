@@ -14,7 +14,7 @@ var uniformNameSet = ["u_SampleImage",      "u_SamplerCurve",   "u_SamplerColorB
                       "u_Brightness",       "u_Contrast", 
                       "u_Hue",              "u_Saturation",     "u_Lightness", 
                       "u_InputMinStage",    "u_InputMaxStage",  "u_Gamma",              "u_OutputMinStage", "u_OutputMaxStage", 
-                      "u_Sharpen",          "u_InvSize",        "u_SharpenCov",
+                      "u_Sharpen",          "u_InvSize",
                       "u_PreserveLuminosity"];
 //Uniform 集合
 var uniformSet = [];
@@ -97,9 +97,10 @@ function onOutputStageMaxChanged(value)
     updateCanvas();
 }
     
-function onSharpenChecked(value)
+function onSharpenChanged(value)
 {
-    gl.uniform1i(uniformSet['u_Sharpen'], value ? 1: 0);
+    document.getElementById("sharpen").innerHTML = value;
+    gl.uniform1f(uniformSet['u_Sharpen'], value / 100);
     updateCanvas();
 }
 
@@ -213,14 +214,8 @@ function initUniforms() {
     gl.uniform1f(uniformSet['u_Hue'], 0);
     gl.uniform1f(uniformSet['u_Saturation'], 0);
     gl.uniform1f(uniformSet['u_Lightness'], 0);
-    gl.uniform1i(uniformSet['u_Sharpen'], 0);
+    gl.uniform1f(uniformSet['u_Sharpen'], 0);
     gl.uniform1i(uniformSet['u_PreserveLuminosity'], 1);
-    gl.uniform1fv(uniformSet['u_SharpenCov'], [-1, -4, -7, -4, -1,   
-                                -4, -16, -26, -16, -4,   
-                                -7, -26, 505, -26, -7,  
-                                -4, -16, -26, -16, -4,   
-                                -1, -4, -7, -4, -1 ]);
-                                
     gl.uniform1f(uniformSet['u_InputMinStage'], 0);
     gl.uniform1f(uniformSet['u_InputMaxStage'], 255);
     gl.uniform1f(uniformSet['u_Gamma'], 1);

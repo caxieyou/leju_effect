@@ -1,5 +1,15 @@
 //Webgl Shader 特效工具文件，GPU级别
+//颜色减淡
+/*
+float blendColorDodge(in float base, in float blend) {
+    return (blend==1.0)?blend:min(base/(1.0-blend),1.0);
+}
 
+vec3 blendColorDodge(in vec3 base, in vec3 blend) {
+    return vec3(blendColorDodge(base.r,blend.r),blendColorDodge(base.g,blend.g),blendColorDodge(base.b,blend.b));
+}
+*/
+//模糊
 
 //vertex shader部分，这部分很简单，没有任何的部分需要强调
 //故整个绑成一体了
@@ -23,8 +33,7 @@ var uniformArray = [    { name: "u_Brightness",             type: "float"},     
                         { name: "u_Saturation",             type: "float"},     //饱和度调节变量
                         { name: "u_Lightness",              type: "float"},     //明度调节变量
                         
-                        { name: "u_Sharpen",                type: "int"},       //是否锐化
-                        { name: "u_SharpenCov[25]",         type: "float"},     //锐化滤波
+                        { name: "u_Sharpen",                type: "float"},     //锐化
                         { name: "u_InvSize",                type: "vec2"},      //图片宽高的反比
                         
                         { name: "u_InputMinStage",          type: "float"},     //色阶输入最小值
@@ -158,48 +167,14 @@ var f_func_hslAdjus =       'vec3 hslAdjust(vec3 color) {                       
                             '}                                                                                      \n';
                             
 // 锐化开启关闭函数
-var f_func_sharpenAdjust =  'vec3 sharpenAdjust(vec3 color) {                                                                                                       \n' +
-                            '    if(u_Sharpen <= 0) {                                                                                                               \n' +
-                            '        return color;                                                                                                                  \n' +
-                            '    } else {                                                                                                                           \n' +
-                            '        color = vec3(0.0);                                                                                                             \n' +
-                            
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-2.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[0] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[1] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-0.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[2] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[3] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 2.0 * u_InvSize.x, -2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[4] ;   \n' +
-                            
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-2.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[5] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[6] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[7] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[8] ;   \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 2.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[9] ;   \n' +
-                            
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-2.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[10] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[11] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[12] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[13] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 2.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[14] ;  \n' +
-                            
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-2.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[15] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[16] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[17] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[18] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 2.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[19] ;  \n' +
-                            
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-2.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[20] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[21] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[22] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[23] ;  \n' +
-                            '        color += texture2D(u_SampleImage, v_TexCoord + vec2( 2.0 * u_InvSize.x,  2.0 * u_InvSize.y)).xyz * 255.0 * u_SharpenCov[24] ;  \n' +
-                            
-                            '        color /= 273.0;                                                                                                                \n' +
-                            '        clamp(color, 0.0, 255.0);                                                                                                      \n' +
-                            
-                            '        return color;                                                                                                                  \n' +
-                            '    }                                                                                                                                  \n' +
-                            '}                                                                                                                                      \n';
+var f_func_sharpenAdjust =  'vec3 sharpenAdjust(vec3 color) {                                                                                         \n' +
+                            '        vec3 sum = color * 5.0;                                                                                          \n' +
+                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0;          \n' +
+                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0;          \n' +
+                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0;          \n' +
+                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0;          \n' +
+                            '        return mix(color, sum, u_Sharpen);                                                                               \n' +
+                            '}                                                                                                                        \n';
 
 // 归一化函数
 var f_func_myNormalize =    'vec3 myNormalize(vec3 val, float dmin, float dmax, float smin, float smax) {   \n' +
