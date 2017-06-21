@@ -15,7 +15,7 @@ var uniformNameSet = ["u_SampleImage",      "u_SamplerCurve",   "u_SamplerColorB
                       "u_Hue",              "u_Saturation",     "u_Lightness", 
                       "u_InputMinStage",    "u_InputMaxStage",  "u_Gamma",              "u_OutputMinStage", "u_OutputMaxStage", 
                       "u_Sharpen",          "u_InvSize",
-                      "u_PreserveLuminosity"];
+                      "u_PreserveLuminosity", "u_Halo"];
 //Uniform 集合
 var uniformSet = [];
 

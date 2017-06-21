@@ -34,7 +34,7 @@ var uniformArray = [    { name: "u_Brightness",             type: "float"},     
                         { name: "u_Lightness",              type: "float"},     //明度调节变量
                         
                         { name: "u_Sharpen",                type: "float"},     //锐化
-                        { name: "u_InvSize",                type: "vec2"},      //图片宽高的反比
+                       
                         
                         { name: "u_InputMinStage",          type: "float"},     //色阶输入最小值
                         { name: "u_InputMaxStage",          type: "float"},     //色阶输入最大值
@@ -49,7 +49,8 @@ var uniformArray = [    { name: "u_Brightness",             type: "float"},     
                         { name: "u_SamplerColorBalance",    type: "sampler2D"}, //色彩平衡模板
                         { name: "u_PreserveLuminosity",     type: "int"},       //是否保留明度
                         
-                        { name: "u_Halo",                   type: "float"}      //光晕
+                        { name: "u_Halo",                   type: "float"},      //光晕
+                         { name: "u_InvSize",                type: "vec2"}      //图片宽高的反比
                     ];
 
 //uniform 变量列表组合成的字符串
@@ -221,24 +222,25 @@ var f_func_haloAdjust = 'float linstep(float minV, float maxV, float v) {       
 
                         'float getEffectCol( vec3 centerC ) {                                                                                       \n' +
                             'float gray = dot(centerC, vec3(0.299, 0.587, 0.114));                                                                  \n' +
-                            'return linstep(1.0 / 2., 1.0 * 1.3, gray);                                                                             \n' +
+                        
+                        'return linstep(1.0 / 2., 1.0 * 1.3, gray);                                                                             \n' +
                         '}                                                                                                                          \n' +
 
                         'vec3 haloAdjust(vec3 color) {                                                                                              \n' +
                         '   color /= 255.0;                                                                                                         \n' +
-                        '   vec2 pos = v_TexCoord * 2.0;                                                                                            \n' +
+                        '   vec2 pos = v_TexCoord;                                                                                            \n' +
                         '   float count = 0.0;                                                                                                      \n' +
                         '   float step = 4.0;                                                                                                       \n' +
-                        '   vec3 Ec = vec3(0.0);                                                                                                    \n' +
+                        '   float Ec = 0.0;                                                                                                    \n' +
                         '   for (int i = -8; i < 8; i++) {                                                                                          \n' +
                         '       for (int j = -8; j < 8; j++) {                                                                                      \n' +
-                        '           float s = getEffectCol( texture2D(u_SampleImage, ( pos + vec2(float(i)*step, float(j)*step) ) / 2.0).xyz);      \n' +
+                        '           float s = getEffectCol( texture2D(u_SampleImage, (pos + vec2(float(i)*step, float(j)*step) *u_InvSize)).xyz);      \n' +
                         '           Ec += s;                                                                                                        \n' +
                         '           count += 1.0;                                                                                                   \n' +
                         '       }                                                                                                                   \n' +
                         '   }                                                                                                                       \n' +
                         '   Ec /= count;                                                                                                            \n' +
-                        '   return clamp((color + ( 1. - color ) * Ec * u_Halo) * 255.0, 0.0, 255.0);                                               \n' +
+                        '   return clamp((color + ( 1.0 - color ) * Ec * u_Halo) * 255.0, 0.0, 255.0);                                               \n' +
                         '}                                                                                                                          \n';
 
 var f_func_Array = [f_func_brightAdjust, 
