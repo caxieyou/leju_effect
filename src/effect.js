@@ -137,6 +137,13 @@ function onYellowChanged(value)
     updateCanvas();
 }
 
+function onHaloChanged(value)
+{
+    document.getElementById("halo").innerHTML = value;
+    gl.uniform1f(uniformSet['u_Halo'], value / 100);
+    updateCanvas();
+}
+
 
 function main() {
     // 获取Canvas
@@ -221,6 +228,7 @@ function initUniforms() {
     gl.uniform1f(uniformSet['u_Gamma'], 1);
     gl.uniform1f(uniformSet['u_OutputMinStage'], 0);
     gl.uniform1f(uniformSet['u_OutputMaxStage'], 255);
+    gl.uniform1f(uniformSet['u_Halo'], 0);
 }
 
 //刷新页面，绘制canvas
