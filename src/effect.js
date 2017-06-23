@@ -303,6 +303,40 @@ function hist(image) {
     return histCount;
 }
 
+function reset() {
+    gl.uniform1i(uniformSet['u_SampleImage'], 0);
+    gl.uniform1i(uniformSet['u_SamplerCurve'], 1);
+    gl.uniform1i(uniformSet['u_SamplerColorBalance'], 2);
+    gl.uniform1f(uniformSet['u_Brightness'], 0);
+    gl.uniform1f(uniformSet['u_Contrast'], 0);
+    gl.uniform1f(uniformSet['u_Hue'], 0);
+    gl.uniform1f(uniformSet['u_Saturation'], 0);
+    gl.uniform1f(uniformSet['u_Lightness'], 0);
+    gl.uniform1f(uniformSet['u_Sharpen'], 0);
+    gl.uniform1i(uniformSet['u_PreserveLuminosity'], 1);
+    gl.uniform1f(uniformSet['u_InputMinStage'], 0);
+    gl.uniform1f(uniformSet['u_InputMaxStage'], 255);
+    gl.uniform1f(uniformSet['u_Gamma'], 1);
+    gl.uniform1f(uniformSet['u_OutputMinStage'], 0);
+    gl.uniform1f(uniformSet['u_OutputMaxStage'], 255);
+    gl.uniform1f(uniformSet['u_Halo'], 0);
+    
+    var resetMap = new Uint8Array(256 * 3);
+    for (var i = 0; i < 256; i++) {
+        resetMap[i * 3] = i;
+        resetMap[i * 3 + 1] = i;
+        resetMap[i * 3 + 2] = i;
+    }
+    
+    gl.activeTexture(gl.TEXTURE1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, resetMap);
+    
+    gl.activeTexture(gl.TEXTURE2);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, resetMap);
+    
+    updateCanvas();
+}
+
 function initTextures() {
     //初始化曲线
     var points = [];
