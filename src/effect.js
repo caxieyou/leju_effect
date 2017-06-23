@@ -113,6 +113,8 @@ function onCyanChanged(value)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, colorBalanceTable);
 
     updateCanvas();
+    
+    return colorBalanceTable;
 }
 
 function onMagentaChanged(value)
@@ -124,6 +126,8 @@ function onMagentaChanged(value)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, colorBalanceTable);
 
     updateCanvas();
+    
+    return colorBalanceTable;
 }
 
 function onYellowChanged(value)
@@ -135,6 +139,7 @@ function onYellowChanged(value)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, colorBalanceTable);
 
     updateCanvas();
+    return colorBalanceTable;
 }
 
 function onHaloChanged(value)
@@ -303,36 +308,51 @@ function hist(image) {
     return histCount;
 }
 
-function reset() {
-    gl.uniform1i(uniformSet['u_SampleImage'], 0);
-    gl.uniform1i(uniformSet['u_SamplerCurve'], 1);
-    gl.uniform1i(uniformSet['u_SamplerColorBalance'], 2);
-    gl.uniform1f(uniformSet['u_Brightness'], 0);
-    gl.uniform1f(uniformSet['u_Contrast'], 0);
-    gl.uniform1f(uniformSet['u_Hue'], 0);
-    gl.uniform1f(uniformSet['u_Saturation'], 0);
-    gl.uniform1f(uniformSet['u_Lightness'], 0);
-    gl.uniform1f(uniformSet['u_Sharpen'], 0);
-    gl.uniform1i(uniformSet['u_PreserveLuminosity'], 1);
-    gl.uniform1f(uniformSet['u_InputMinStage'], 0);
-    gl.uniform1f(uniformSet['u_InputMaxStage'], 255);
-    gl.uniform1f(uniformSet['u_Gamma'], 1);
-    gl.uniform1f(uniformSet['u_OutputMinStage'], 0);
-    gl.uniform1f(uniformSet['u_OutputMaxStage'], 255);
-    gl.uniform1f(uniformSet['u_Halo'], 0);
-    
-    var resetMap = new Uint8Array(256 * 3);
-    for (var i = 0; i < 256; i++) {
-        resetMap[i * 3] = i;
-        resetMap[i * 3 + 1] = i;
-        resetMap[i * 3 + 2] = i;
+function reset(setting) {
+    if(setting) {
+        /*
+        gl.uniform1f(uniformSet['u_Brightness'], setting.brightness);
+        gl.uniform1f(uniformSet['u_Contrast'], setting.contrast);
+        ...
+        //设置曲线的颜色映射
+        gl.activeTexture(gl.TEXTURE1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, setting.curveMap);
+        
+        //设置色彩平衡的颜色映射
+        gl.activeTexture(gl.TEXTURE2);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, setting.colorBalanceMap);
+        */
+        
+    } else {
+        gl.uniform1f(uniformSet['u_Brightness'], 0);
+        gl.uniform1f(uniformSet['u_Contrast'], 0);
+        gl.uniform1f(uniformSet['u_Hue'], 0);
+        gl.uniform1f(uniformSet['u_Saturation'], 0);
+        gl.uniform1f(uniformSet['u_Lightness'], 0);
+        gl.uniform1f(uniformSet['u_Sharpen'], 0);
+        gl.uniform1f(uniformSet['u_InputMinStage'], 0);
+        gl.uniform1f(uniformSet['u_InputMaxStage'], 255);
+        gl.uniform1f(uniformSet['u_Gamma'], 1);
+        gl.uniform1f(uniformSet['u_OutputMinStage'], 0);
+        gl.uniform1f(uniformSet['u_OutputMaxStage'], 255);
+        gl.uniform1f(uniformSet['u_Halo'], 0);
+        
+        var resetMap = new Uint8Array(256 * 3);
+        for (var i = 0; i < 256; i++) {
+            resetMap[i * 3] = i;
+            resetMap[i * 3 + 1] = i;
+            resetMap[i * 3 + 2] = i;
+        }
+        
+        //设置曲线的颜色映射
+        gl.activeTexture(gl.TEXTURE1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, resetMap);
+        
+        //设置色彩平衡的颜色映射
+        gl.activeTexture(gl.TEXTURE2);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, resetMap);
+        
     }
-    
-    gl.activeTexture(gl.TEXTURE1);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, resetMap);
-    
-    gl.activeTexture(gl.TEXTURE2);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, resetMap);
     
     updateCanvas();
 }
