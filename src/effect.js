@@ -235,6 +235,9 @@ function initUniforms() {
 function updateCanvas() {
     gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // Draw the rectangle
+    //强制刷新，异步改为同步
+    var syncBuffer = new Uint8Array(4); 
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, syncBuffer);
 }
 
 function _createTexture(index, colorTable, image) {
@@ -263,6 +266,43 @@ function _createTexture(index, colorTable, image) {
     
 }
 
+function hist(image) {
+    
+    var canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+    var pixelData = canvas.getContext('2d').getImageData(0, 0, image.width, image.height).data;
+                    
+    var histCount = new Array(256); 
+
+    for (var i = 0; i < 256; i++) {
+        histCount[i] = 0;
+    }
+    
+    for(var i = 0; i < image.height ; i++)
+    {
+        for(var j = 0 ; j < image.width ; j++)
+        {
+            var offset = (i * image.width + j) * 4;
+            
+            var r = pixelData[offset + 0];
+            var g = pixelData[offset + 1];
+            var b = pixelData[offset + 2];
+            
+            var grayValue =  Math.floor(r * 0.299 + g * 0.587 + b * 0.114);
+            //debugger;
+            //console.log(grayValue);
+            histCount[grayValue]++;
+        }
+    }
+    for (var i = 0; i < 256; i++) {
+        histCount[i] /= image.width * image.height;
+    }
+    
+    return histCount;
+}
+
 function initTextures() {
     //初始化曲线
     var points = [];
@@ -284,12 +324,16 @@ function initTextures() {
     // Register the event handler to be called on loading an image
     image.onload = function(){ 
                     //获取图片本身的像素信息，用于做后续分析工作，暂时没有这个需求
+                    /*
                     var canvas = document.createElement('canvas');
                     canvas.width = image.width;
                     canvas.height = image.height;
                     canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
                     var pixelData = canvas.getContext('2d').getImageData(0, 0, image.width, image.height).data;
-
+                    console.log(image.width + " " + image.height);
+                    console.log(pixelData);
+                    */
+                    console.log(hist(image));
                     //创建图片纹理
                     _createTexture(0, null, image);
                     gl.uniform2f(uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
