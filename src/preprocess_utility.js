@@ -187,6 +187,7 @@ var BALANCE_MODE = {
     MIDTONES: 1,
     HIGHLIGHTS: 2
 }
+
 //参考Photoshop的色彩平衡面板，青色，杨红，黄色，模式
 function pre_colorBalance(setting)
 {

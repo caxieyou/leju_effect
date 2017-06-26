@@ -223,24 +223,24 @@ var f_func_haloAdjust = 'float linstep(float minV, float maxV, float v) {       
                         'float getEffectCol( vec3 centerC ) {                                                                                       \n' +
                             'float gray = dot(centerC, vec3(0.299, 0.587, 0.114));                                                                  \n' +
                         
-                        'return linstep(1.0 / 2., 1.0 * 1.3, gray);                                                                             \n' +
+                        '   return linstep(1.0 / 2., 1.0 * 1.3, gray);                                                                              \n' +
                         '}                                                                                                                          \n' +
 
                         'vec3 haloAdjust(vec3 color) {                                                                                              \n' +
                         '   color /= 255.0;                                                                                                         \n' +
-                        '   vec2 pos = v_TexCoord;                                                                                            \n' +
+                        '   vec2 pos = v_TexCoord;                                                                                                  \n' +
                         '   float count = 0.0;                                                                                                      \n' +
                         '   float step = 4.0;                                                                                                       \n' +
-                        '   float Ec = 0.0;                                                                                                    \n' +
+                        '   float Ec = 0.0;                                                                                                         \n' +
                         '   for (int i = -8; i < 8; i++) {                                                                                          \n' +
                         '       for (int j = -8; j < 8; j++) {                                                                                      \n' +
-                        '           float s = getEffectCol( texture2D(u_SampleImage, (pos + vec2(float(i)*step, float(j)*step) *u_InvSize)).xyz);      \n' +
+                        '           float s = getEffectCol( texture2D(u_SampleImage, (pos + vec2(float(i)*step, float(j)*step) *u_InvSize)).xyz);   \n' +
                         '           Ec += s;                                                                                                        \n' +
                         '           count += 1.0;                                                                                                   \n' +
                         '       }                                                                                                                   \n' +
                         '   }                                                                                                                       \n' +
                         '   Ec /= count;                                                                                                            \n' +
-                        '   return clamp((color + ( 1.0 - color ) * Ec * u_Halo) * 255.0, 0.0, 255.0);                                               \n' +
+                        '   return clamp((color + ( 1.0 - color ) * Ec * u_Halo) * 255.0, 0.0, 255.0);                                              \n' +
                         '}                                                                                                                          \n';
 
 var f_func_Array = [f_func_brightAdjust, 
@@ -270,7 +270,7 @@ var f_func_main =   'void main() {                                              
                     '       color = stageAdjust(color);                                 \n' +
                     '       color = applyCurve(color, u_SamplerCurve);                  \n' +
                     '       color = colorBalanceAdjust(color, u_SamplerColorBalance);   \n' +
-                    '       color = haloAdjust(color);   \n' +
+                    '       color = haloAdjust(color);                                  \n' +
                     '   gl_FragColor = vec4(color/ 255.0, 1.0);                         \n' +
                     '}                                                                  \n';
 

@@ -100,7 +100,7 @@ function onOutputStageMaxChanged(value)
 function onSharpenChanged(value)
 {
     document.getElementById("sharpen").innerHTML = value;
-    gl.uniform1f(uniformSet['u_Sharpen'], value / 100);
+    gl.uniform1f(uniformSet['u_Sharpen'], value);
     updateCanvas();
 }
 
@@ -150,92 +150,6 @@ function onHaloChanged(value)
 }
 
 
-function main() {
-    // 获取Canvas
-    var canvas = document.getElementById('webgl');
-
-    // 获取webgl上下文
-    gl = getWebGLContext(canvas);
-    if (!gl) {
-        console.log('Failed to get the rendering context for WebGL');
-        return;
-    }
-
-    // 初始化shader
-    if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-        console.log('Failed to intialize shaders.');
-        return;
-    }
-
-    // 初始化点
-    initVertexBuffers();
-
-    // Specify the color for clearing <canvas>
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-    initUniforms();
-    
-    initTextures();//加载图片
-}
-
-function initVertexBuffers() {
-    var verticesTexCoords = new Float32Array([
-        // Vertex coordinates, texture coordinate
-        -1.0,  1.0,   0.0, 1.0,
-        -1.0, -1.0,   0.0, 0.0,
-         1.0,  1.0,   1.0, 1.0,
-         1.0, -1.0,   1.0, 0.0,
-    ]);
-
-    // Create the buffer object
-    var vertexTexCoordBuffer = gl.createBuffer();
-
-    // Bind the buffer object to target
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
-
-    var FSIZE = verticesTexCoords.BYTES_PER_ELEMENT;
-    //Get the storage location of a_Position, assign and enable buffer
-    var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-
-    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
-    gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
-
-    // Get the storage location of a_TexCoord
-    var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
-
-    // Assign the buffer object to a_TexCoord variable
-    gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
-    gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
-}
-
-function initUniforms() {
-    for(var i = 0; i < uniformNameSet.length; i++) {
-        uniformSet[uniformNameSet[i]] = gl.getUniformLocation(gl.program, uniformNameSet[i]);
-        if (!uniformSet[uniformNameSet[i]]) {
-            console.log('Failed to get the storage location of ' + 'uniformNameSet[i]');
-            return false;
-        }
-    }
-    
-    gl.uniform1i(uniformSet['u_SampleImage'], 0);
-    gl.uniform1i(uniformSet['u_SamplerCurve'], 1);
-    gl.uniform1i(uniformSet['u_SamplerColorBalance'], 2);
-    gl.uniform1f(uniformSet['u_Brightness'], 0);
-    gl.uniform1f(uniformSet['u_Contrast'], 0);
-    gl.uniform1f(uniformSet['u_Hue'], 0);
-    gl.uniform1f(uniformSet['u_Saturation'], 0);
-    gl.uniform1f(uniformSet['u_Lightness'], 0);
-    gl.uniform1f(uniformSet['u_Sharpen'], 0);
-    gl.uniform1i(uniformSet['u_PreserveLuminosity'], 1);
-    gl.uniform1f(uniformSet['u_InputMinStage'], 0);
-    gl.uniform1f(uniformSet['u_InputMaxStage'], 255);
-    gl.uniform1f(uniformSet['u_Gamma'], 1);
-    gl.uniform1f(uniformSet['u_OutputMinStage'], 0);
-    gl.uniform1f(uniformSet['u_OutputMaxStage'], 255);
-    gl.uniform1f(uniformSet['u_Halo'], 0);
-}
-
 //刷新页面，绘制canvas
 function updateCanvas() {
     gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
@@ -245,31 +159,6 @@ function updateCanvas() {
     gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, syncBuffer);
 }
 
-function _createTexture(index, colorTable, image) {
-    var texture =  gl.createTexture();   // Create a texture object
-    if (!texture) {
-        console.log('Failed to create the texture object');
-        return false;
-    }
-    
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-    gl.activeTexture(gl.TEXTURE0 + index);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    // Set the texture parameters
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        
-    if (colorTable) {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, colorTable);
-    }
-    if (image) {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-    }
-    
-}
 
 function hist(image) {
     
@@ -357,7 +246,131 @@ function reset(setting) {
     updateCanvas();
 }
 
-function initTextures() {
+
+function main() {
+    // 获取Canvas
+    var canvas = document.getElementById('webgl');
+
+    init(canvas);
+}
+
+function init(canvas) {
+    if (gl === undefined) {
+        gl = getWebGLContext(canvas);
+        if (!gl) {
+            console.log('Failed to get the rendering context for WebGL');
+            return;
+        }
+
+        // 初始化shader
+        initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
+
+        // 初始化点
+        _initVertexBuffers();
+
+        // Specify the color for clearing <canvas>
+        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+        _initUniforms();
+        
+        _initTextures();//加载图片
+    }
+}
+
+function _initVertexBuffers() {
+    var verticesTexCoords = new Float32Array([
+        // Vertex coordinates, texture coordinate
+        -1.0,  1.0,   0.0, 1.0,
+        -1.0, -1.0,   0.0, 0.0,
+         1.0,  1.0,   1.0, 1.0,
+         1.0, -1.0,   1.0, 0.0,
+    ]);
+
+    // Create the buffer object
+    var vertexTexCoordBuffer = gl.createBuffer();
+
+    // Bind the buffer object to target
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
+
+    var FSIZE = verticesTexCoords.BYTES_PER_ELEMENT;
+    //Get the storage location of a_Position, assign and enable buffer
+    var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+
+    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+    gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
+
+    // Get the storage location of a_TexCoord
+    var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
+
+    // Assign the buffer object to a_TexCoord variable
+    gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+    gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
+}
+
+function _initUniforms() {
+    for(var i = 0; i < uniformNameSet.length; i++) {
+        uniformSet[uniformNameSet[i]] = gl.getUniformLocation(gl.program, uniformNameSet[i]);
+        if (!uniformSet[uniformNameSet[i]]) {
+            console.log('Failed to get the storage location of ' + 'uniformNameSet[i]');
+            return false;
+        }
+    }
+    
+    gl.uniform1i(uniformSet['u_SampleImage'], 0);
+    gl.uniform1i(uniformSet['u_SamplerCurve'], 1);
+    gl.uniform1i(uniformSet['u_SamplerColorBalance'], 2);
+    gl.uniform1f(uniformSet['u_Brightness'], 0);
+    gl.uniform1f(uniformSet['u_Contrast'], 0);
+    gl.uniform1f(uniformSet['u_Hue'], 0);
+    gl.uniform1f(uniformSet['u_Saturation'], 0);
+    gl.uniform1f(uniformSet['u_Lightness'], 0);
+    gl.uniform1f(uniformSet['u_Sharpen'], 0);
+    gl.uniform1i(uniformSet['u_PreserveLuminosity'], 1);
+    gl.uniform1f(uniformSet['u_InputMinStage'], 0);
+    gl.uniform1f(uniformSet['u_InputMaxStage'], 255);
+    gl.uniform1f(uniformSet['u_Gamma'], 1);
+    gl.uniform1f(uniformSet['u_OutputMinStage'], 0);
+    gl.uniform1f(uniformSet['u_OutputMaxStage'], 255);
+    gl.uniform1f(uniformSet['u_Halo'], 0);
+}
+
+function _createTexture(index, colorTable, image) {
+    var texture =  gl.createTexture();   // Create a texture object
+    if (!texture) {
+        console.log('Failed to create the texture object');
+        return false;
+    }
+    
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+    gl.activeTexture(gl.TEXTURE0 + index);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // Set the texture parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        
+    if (colorTable) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, colorTable);
+    }
+    if (image) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+        gl.uniform2f(uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
+    }
+    
+}
+
+function switchImage(image) {
+    reset();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.uniform2f(uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
+    updateCanvas();
+}
+
+function _initTextures() {
     //初始化曲线
     var points = [];
     points[0] = {x: 0, y: 0};
@@ -368,7 +381,7 @@ function initTextures() {
     //初始化色彩平衡
     var colorBalanceTable = pre_colorBalance(colorBalanceSetting);
     _createTexture(2, colorBalanceTable);
-  
+    
     var image = new Image();  // Create the image object
     if (!image) {
         console.log('Failed to create the image object');
@@ -377,21 +390,8 @@ function initTextures() {
     
     // Register the event handler to be called on loading an image
     image.onload = function(){ 
-                    //获取图片本身的像素信息，用于做后续分析工作，暂时没有这个需求
-                    /*
-                    var canvas = document.createElement('canvas');
-                    canvas.width = image.width;
-                    canvas.height = image.height;
-                    canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
-                    var pixelData = canvas.getContext('2d').getImageData(0, 0, image.width, image.height).data;
-                    console.log(image.width + " " + image.height);
-                    console.log(pixelData);
-                    */
-                    console.log(hist(image));
                     //创建图片纹理
                     _createTexture(0, null, image);
-                    gl.uniform2f(uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
-                    
                     updateCanvas(); 
                  };
     // Tell the browser to load an image
