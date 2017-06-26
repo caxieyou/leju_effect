@@ -210,3 +210,8 @@ EffectRender.prototype.setColorBalance = function(colorBalanceTable) {
     this.updateCanvas();
 };
 
+EffectRender.prototype.setCurve = function(colorBalanceTable) {
+    this._gl.activeTexture(this._gl.TEXTURE1);
+    this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGB, 256, 1, 0, this._gl.RGB, this._gl.UNSIGNED_BYTE, colorBalanceTable);
+    this.updateCanvas();
+};
