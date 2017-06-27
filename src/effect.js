@@ -112,8 +112,21 @@ function onDownLoad() {
     var canvas = document.getElementById('webgl');
     var dataURL = effectRender.dump(canvas);
     dataURL = dataURL.replace("image/png", "image/octet-stream");
+    
+    var dataUrlArray = dataURL.split(",");
+    var mime = dataUrlArray[0].match(/:(.*?);/)[1];
+    var binaryString = atob(dataUrlArray[1]);
+    var binaryStringLength = binaryString.length;
+    var u8array = new Uint8Array(binaryStringLength);
+    while (binaryStringLength--) {
+        u8array[binaryStringLength] = binaryString.charCodeAt(binaryStringLength);
+    }
+    var blob = new Blob([u8array], {type: mime});
+    var urlCreator = window.URL || window.webkitURL || window;
+    var imageUrl = urlCreator.createObjectURL(blob);
+    
     var save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a');
-    save_link.href = dataURL;
+    save_link.href = imageUrl;
     save_link.download = "XXXX.png";
     var event = document.createEvent('MouseEvents');
     event.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);

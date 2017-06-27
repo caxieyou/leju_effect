@@ -141,8 +141,8 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
     if (image.width > 4096 || image.height > 4096) {
         var newWidth, newHeight;
         if (image.width >= image.height) {
-            newWidth = Math.floor(image.height * 4096 / image.width);
-            newHeight  = 4096;
+            newHeight = Math.floor(image.height * 4096 / image.width);
+            newWidth  = 4096;
         } else {
             newWidth  = Math.floor(image.width * 4096 / image.height);
             newHeight = 4096;
