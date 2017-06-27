@@ -147,31 +147,32 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
             newWidth  = Math.floor(image.width * 4096 / image.height);
             newHeight = 4096;
         }
+        //这一步重绘需要花一点时间
         var canvas = document.createElement('canvas');
         var ctx = canvas.getContext('2d');
         canvas.width = newWidth;
         canvas.height = newHeight;
         ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, newWidth, newHeight);
-
+        var that = this;
         //create a new image
         var newImage = new Image();
         newImage.name = "patch_" + i;
         newImage.crossOrigin = "";
         newImage.onload = function(){
-            if (!this._srcImg) {
-                this._createTexture(0, null, newImage);
+            if (!that._srcImg) {
+                that._createTexture(0, null, newImage);
             } else {
-                this._gl.activeTexture(this._gl.TEXTURE0);
-                this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGB, this._gl.RGB, this._gl.UNSIGNED_BYTE, newImage);
+                that._gl.activeTexture(that._gl.TEXTURE0);
+                that._gl.texImage2D(that._gl.TEXTURE_2D, 0, that._gl.RGB, that._gl.RGB, that._gl.UNSIGNED_BYTE, newImage);
             }
             
-            this._srcImg = newImage;
-            this._gl.uniform2f(this._uniformSet['u_InvSize'], 1 / newImage.width, 1/ image.newImage);
+            that._srcImg = newImage;
+            that._gl.uniform2f(that._uniformSet['u_InvSize'], 1 / newImage.width, 1/ image.newImage);
             var _width = width || newImage.width;
             var _height = height || newImage.height;
-            this._gl.viewport(0, 0, _width, _height);
-            this.reset();
-            this.updateCanvas();
+            that._gl.viewport(0, 0, _width, _height);
+            that.reset();
+            that.updateCanvas();
         };
         newImage.src = canvas.toDataURL("image/png");
     } else {
