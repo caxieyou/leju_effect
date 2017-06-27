@@ -9,6 +9,12 @@
     <canvas id="webgl" width="900" height="599">
     Please use a browser that supports "canvas"
     </canvas>
+    
+    <p>
+      <button onclick="onDownLoad()">下载</button>
+      <button onclick="onChangeImage()">换图</button>
+    </p>
+    
     <p>
       <span >亮度 </span>
       <input type="range" min="-100" max="100" value="0" onchange="onBrightnessChanged(this.value)"/>

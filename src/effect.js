@@ -108,6 +108,39 @@ function onHaloChanged(value)
     effectRender.setUniform1f('u_Halo', value);
 }
 
+function onDownLoad() {
+    var canvas = document.getElementById('webgl');
+    var dataURL = canvas.toDataURL("image/png")
+    dataURL = dataURL.replace("image/png", "image/octet-stream");
+    var save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a');
+    save_link.href = dataURL;
+    save_link.download = "XXXX.png";
+    var event = document.createEvent('MouseEvents');
+    event.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    save_link.dispatchEvent(event);
+}
+
+function onChangeImage() {
+    var image = new Image();  // Create the image object
+    if (!image) {
+        console.log('Failed to create the image object');
+        return false;
+    }
+    
+    // Register the event handler to be called on loading an image
+    image.onload = function(){ 
+                    var canvas = document.getElementById('webgl');
+                    canvas.style.width = image.width + "px";
+                    canvas.style.height = image.height + "px";
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+        
+                    effectRender.setSrcImage(image);
+                 };
+    // Tell the browser to load an image
+    image.src = '../resources/view2.jpg';
+}
+
 //var points = [];
 //points[0] = {x: 0, y: 0};
 //points[1] = {x: 255, y: 255};
