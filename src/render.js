@@ -145,6 +145,7 @@ EffectRender.prototype.setSrcImage = function(image) {
     
     this._srcImg = image;
     this._gl.uniform2f(this._uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
+    this._gl.viewport(0, 0, image.width, image.height);
     this.reset();
     this.updateCanvas();
     
