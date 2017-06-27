@@ -135,21 +135,85 @@ EffectRender.prototype.updateCanvas = function() {
     this._gl.readPixels(0, 0, 1, 1, this._gl.RGBA, this._gl.UNSIGNED_BYTE, syncBuffer);
 };
 
-EffectRender.prototype.setSrcImage = function(image) {
-    if (!this._srcImg) {
-        this._createTexture(0, null, image);
+//width 和 height 是canvas的宽高
+EffectRender.prototype.setSrcImage = function(image, width, height) {
+    var localImage;
+    if (image.width > 4096 || image.height > 4096) {
+        var newWidth, newHeight;
+        if (image.width >= image.height) {
+            newWidth = Math.floor(image.height * 4096 / image.width);
+            newHeight  = 4096;
+        } else {
+            newWidth  = Math.floor(image.width * 4096 / image.height);
+            newHeight = 4096;
+        }
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, newWidth, newHeight);
+
+        //create a new image
+        var newImage = new Image();
+        newImage.name = "patch_" + i;
+        newImage.crossOrigin = "";
+        newImage.onload = function(){
+            if (!this._srcImg) {
+                this._createTexture(0, null, newImage);
+            } else {
+                this._gl.activeTexture(this._gl.TEXTURE0);
+                this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGB, this._gl.RGB, this._gl.UNSIGNED_BYTE, newImage);
+            }
+            
+            this._srcImg = newImage;
+            this._gl.uniform2f(this._uniformSet['u_InvSize'], 1 / newImage.width, 1/ image.newImage);
+            var _width = width || newImage.width;
+            var _height = height || newImage.height;
+            this._gl.viewport(0, 0, _width, _height);
+            this.reset();
+            this.updateCanvas();
+        };
+        newImage.src = canvas.toDataURL("image/png");
     } else {
-        this._gl.activeTexture(this._gl.TEXTURE0);
-        this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGB, this._gl.RGB, this._gl.UNSIGNED_BYTE, image);
+        if (!this._srcImg) {
+            this._createTexture(0, null, image);
+        } else {
+            this._gl.activeTexture(this._gl.TEXTURE0);
+            this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGB, this._gl.RGB, this._gl.UNSIGNED_BYTE, image);
+        }
+        
+        this._srcImg = image;
+        this._gl.uniform2f(this._uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
+        var _width = width || image.width;
+        var _height = height || image.height;
+        this._gl.viewport(0, 0, _width, _height);
+        this.reset();
+        this.updateCanvas();
     }
+};
+
+EffectRender.prototype.dump = function(canvas) {
+    var oldWidth = canvas.width;
+    var oldHeight = canvas.height;
     
-    this._srcImg = image;
-    this._gl.uniform2f(this._uniformSet['u_InvSize'], 1 / image.width, 1/ image.height);
-    this._gl.viewport(0, 0, image.width, image.height);
-    this.reset();
+    canvas.style.width = this._srcImg.width + "px";
+    canvas.style.height = this._srcImg.height + "px";
+    canvas.width = this._srcImg.width;
+    canvas.height = this._srcImg.height;
+    this._gl.viewport(0, 0, this._srcImg.width, this._srcImg.height);
     this.updateCanvas();
     
-};
+    var thumbnail = canvas.toDataURL("image/png");
+    
+    canvas.style.width = oldWidth + "px";
+    canvas.style.height = oldHeight + "px";
+    canvas.width = oldWidth;
+    canvas.height = oldHeight;
+    this._gl.viewport(0, 0, oldWidth, oldHeight);
+    this.updateCanvas();
+    return thumbnail;
+}
+
 
 EffectRender.prototype.reset = function(setting) {
     if(setting) {

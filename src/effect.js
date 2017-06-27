@@ -110,7 +110,7 @@ function onHaloChanged(value)
 
 function onDownLoad() {
     var canvas = document.getElementById('webgl');
-    var dataURL = canvas.toDataURL("image/png")
+    var dataURL = effectRender.dump(canvas);
     dataURL = dataURL.replace("image/png", "image/octet-stream");
     var save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a');
     save_link.href = dataURL;
@@ -130,12 +130,12 @@ function onChangeImage() {
     // Register the event handler to be called on loading an image
     image.onload = function(){ 
                     var canvas = document.getElementById('webgl');
-                    canvas.style.width = image.width + "px";
-                    canvas.style.height = image.height + "px";
-                    canvas.width = image.width;
-                    canvas.height = image.height;
+                    canvas.style.width = 100 + "px";
+                    canvas.style.height = 100 + "px";
+                    canvas.width = 100;
+                    canvas.height = 100;
         
-                    effectRender.setSrcImage(image);
+                    effectRender.setSrcImage(image, 100, 100);
                  };
     // Tell the browser to load an image
     image.src = '../resources/view2.jpg';
