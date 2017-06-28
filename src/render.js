@@ -215,6 +215,12 @@ EffectRender.prototype.dump = function(canvas) {
     return thumbnail;
 }
 
+//假设你已经把canvas给resize好了，把它的宽高传进来
+EffectRender.prototype.resize = function(width, height) {
+    this._gl.viewport(0, 0, width, height);
+    this.updateCanvas();
+}
+
 
 EffectRender.prototype.reset = function(setting) {
     if(setting) {
