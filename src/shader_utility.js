@@ -246,7 +246,25 @@ var f_func_haloAdjust = 'float linstep(float minV, float maxV, float v) {       
 
 var f_func_adjustColor =   'vec3 _adjustColor(vec2 coord) {                                                                                         \n' +
                            '    float scale = u_Scale;                                                                                              \n' +
-                           '    vec3 color = texture2D(u_SampleImage, coord).xyz;                                                                   \n' +
+                           '    vec3 color = vec3(0.0);                                                                                             \n' +
+                            
+                           '    if (scale < 0.3){                                                                                                   \n' +
+                           '        for(int i = -2; i < 3; i++)                                                                                     \n' +
+                           '            for(int j = -2; j < 3; j++)                                                                                 \n' +
+                           '            {                                                                                                           \n' +
+                           '                color += texture2D(u_SampleImage, coord + vec2(float(i) * u_InvSize.x,  float(j) * u_InvSize.y)).xyz;   \n' +
+                           '            }                                                                                                           \n' +
+                           '        color /= 25.0;                                                                                                  \n' +
+                           '    } else if (scale < 0.5) {                                                                                           \n' +
+                           '        for(int i = -1; i < 2; i++)                                                                                     \n' +
+                           '            for(int j = -1; j < 2; j++)                                                                                 \n' +
+                           '            {                                                                                                           \n' +
+                           '                color += texture2D(u_SampleImage, coord + vec2(float(i) * u_InvSize.x,  float(j) * u_InvSize.y)).xyz;   \n' +
+                           '            }                                                                                                           \n' +
+                           '        color /= 5.0;                                                                                                   \n' +
+                           '    } else {                                                                                                            \n' +
+                           '        color = texture2D(u_SampleImage, coord).xyz;                                                                    \n' +
+                           '    }                                                                                                                   \n' +
                            '    return color;                                                                                                       \n' +
                            '}                                                                                                                       \n';
                         
