@@ -13,7 +13,7 @@ function EffectRender() {
                             "u_Hue",              "u_Saturation",     "u_Lightness", 
                             "u_InputMinStage",    "u_InputMaxStage",  "u_Gamma",              "u_OutputMinStage", "u_OutputMaxStage", 
                             "u_Sharpen",          "u_InvSize",
-                            "u_PreserveLuminosity", "u_Halo"];
+                            "u_PreserveLuminosity", "u_Halo", "u_Scale"];
     this._uniformSet     = [];
     this._srcImg         = null;
 };
@@ -86,6 +86,7 @@ EffectRender.prototype._initUniforms = function(uniformNameSet) {
     this._gl.uniform1f(this._uniformSet['u_OutputMinStage'], 0);
     this._gl.uniform1f(this._uniformSet['u_OutputMaxStage'], 255);
     this._gl.uniform1f(this._uniformSet['u_Halo'], 0);
+    this._gl.uniform1f(this._uniformSet['u_Scale'], 1);
 };
 
 EffectRender.prototype._initTextures = function() {
@@ -167,10 +168,13 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
             }
             
             that._srcImg = newImage;
-            that._gl.uniform2f(that._uniformSet['u_InvSize'], 1 / newImage.width, 1/ image.newImage);
+            that._gl.uniform2f(that._uniformSet['u_InvSize'], 1 / newImage.width, 1/ newImage.height);
             var _width = width || newImage.width;
             var _height = height || newImage.height;
             that._gl.viewport(0, 0, _width, _height);
+            
+            that._gl.uniform1f(that._uniformSet['u_Scale'], 0.25/*Math.min(_width / that._srcImg.width, 1.0)*/);
+            console.log("change image: " + Math.min(_width / that._srcImg.width, 1.0));
             that.reset();
             that.updateCanvas();
         };
@@ -188,6 +192,7 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
         var _width = width || image.width;
         var _height = height || image.height;
         this._gl.viewport(0, 0, _width, _height);
+        this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(_width / this._srcImg.width, 1.0));
         this.reset();
         this.updateCanvas();
     }
@@ -202,6 +207,7 @@ EffectRender.prototype.dump = function(canvas) {
     canvas.width = this._srcImg.width;
     canvas.height = this._srcImg.height;
     this._gl.viewport(0, 0, this._srcImg.width, this._srcImg.height);
+    this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(canvas.width / this._srcImg.width, 1.0));
     this.updateCanvas();
     
     var thumbnail = canvas.toDataURL("image/png");
@@ -211,6 +217,7 @@ EffectRender.prototype.dump = function(canvas) {
     canvas.width = oldWidth;
     canvas.height = oldHeight;
     this._gl.viewport(0, 0, oldWidth, oldHeight);
+    this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(canvas.width / this._srcImg.width, 1.0));
     this.updateCanvas();
     return thumbnail;
 }
@@ -218,6 +225,7 @@ EffectRender.prototype.dump = function(canvas) {
 //假设你已经把canvas给resize好了，把它的宽高传进来
 EffectRender.prototype.resize = function(width, height) {
     this._gl.viewport(0, 0, width, height);
+    this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(width / this._srcImg.width, 1.0));
     this.updateCanvas();
 }
 

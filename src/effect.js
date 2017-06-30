@@ -143,12 +143,12 @@ function onChangeImage() {
     // Register the event handler to be called on loading an image
     image.onload = function(){ 
                     var canvas = document.getElementById('webgl');
-                    canvas.style.width = 100 + "px";
-                    canvas.style.height = 100 + "px";
-                    canvas.width = 100;
-                    canvas.height = 100;
+                    canvas.style.width = 899 + "px";
+                    canvas.style.height = 587 + "px";
+                    canvas.width = 899;
+                    canvas.height = 587;
         
-                    effectRender.setSrcImage(image, 100, 100);
+                    effectRender.setSrcImage(image, 899, 587);
                  };
     // Tell the browser to load an image
     image.src = '../resources/view2.jpg';

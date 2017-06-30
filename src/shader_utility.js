@@ -50,7 +50,8 @@ var uniformArray = [    { name: "u_Brightness",             type: "float"},     
                         { name: "u_PreserveLuminosity",     type: "int"},       //是否保留明度
                         
                         { name: "u_Halo",                   type: "float"},      //光晕
-                         { name: "u_InvSize",                type: "vec2"}      //图片宽高的反比
+                        { name: "u_InvSize",                type: "vec2"},       //图片宽高的反比
+                        { name: "u_Scale",                  type: "float"}       //缩放比例
                     ];
 
 //uniform 变量列表组合成的字符串
@@ -172,10 +173,10 @@ var f_func_hslAdjus =       'vec3 hslAdjust(vec3 color) {                       
 // 锐化开启关闭函数
 var f_func_sharpenAdjust =  'vec3 sharpenAdjust(vec3 color) {                                                                                         \n' +
                             '        vec3 sum = color * 5.0;                                                                                          \n' +
-                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2( 1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0;          \n' +
-                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2(-1.0 * u_InvSize.x,  0.0 * u_InvSize.y)).xyz * 255.0;          \n' +
-                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x,  1.0 * u_InvSize.y)).xyz * 255.0;          \n' +
-                            '        sum -= texture2D(u_SampleImage, v_TexCoord + vec2( 0.0 * u_InvSize.x, -1.0 * u_InvSize.y)).xyz * 255.0;          \n' +
+                            '        sum -= _adjustColor(v_TexCoord + vec2( 1.0 * u_InvSize.x,  0.0 * u_InvSize.y)) * 255.0;          \n' +
+                            '        sum -= _adjustColor(v_TexCoord + vec2(-1.0 * u_InvSize.x,  0.0 * u_InvSize.y)) * 255.0;          \n' +
+                            '        sum -= _adjustColor(v_TexCoord + vec2( 0.0 * u_InvSize.x,  1.0 * u_InvSize.y)) * 255.0;          \n' +
+                            '        sum -= _adjustColor(v_TexCoord + vec2( 0.0 * u_InvSize.x, -1.0 * u_InvSize.y)) * 255.0;          \n' +
                             '        return mix(color, sum, u_Sharpen);                                                                               \n' +
                             '}                                                                                                                        \n';
 
@@ -234,7 +235,7 @@ var f_func_haloAdjust = 'float linstep(float minV, float maxV, float v) {       
                         '   float Ec = 0.0;                                                                                                         \n' +
                         '   for (int i = -8; i < 8; i++) {                                                                                          \n' +
                         '       for (int j = -8; j < 8; j++) {                                                                                      \n' +
-                        '           float s = getEffectCol( texture2D(u_SampleImage, (pos + vec2(float(i)*step, float(j)*step) *u_InvSize)).xyz);   \n' +
+                        '           float s = getEffectCol(_adjustColor(pos + vec2(float(i)*step, float(j)*step) *u_InvSize));   \n' +
                         '           Ec += s;                                                                                                        \n' +
                         '           count += 1.0;                                                                                                   \n' +
                         '       }                                                                                                                   \n' +
@@ -243,7 +244,15 @@ var f_func_haloAdjust = 'float linstep(float minV, float maxV, float v) {       
                         '   return clamp((color + ( 1.0 - color ) * Ec * u_Halo) * 255.0, 0.0, 255.0);                                              \n' +
                         '}                                                                                                                          \n';
 
-var f_func_Array = [f_func_brightAdjust, 
+var f_func_adjustColor =   'vec3 _adjustColor(vec2 coord) {                                                                                         \n' +
+                           '    float scale = u_Scale;                                                                                              \n' +
+                           '    vec3 color = texture2D(u_SampleImage, coord).xyz;                                                                   \n' +
+                           '    return color;                                                                                                       \n' +
+                           '}                                                                                                                       \n';
+                        
+                        
+var f_func_Array = [f_func_adjustColor,
+                    f_func_brightAdjust, 
                     f_func_contrastAdjust, 
                     f_func_RGBToHSL, 
                     f_func_HueToRGB, 
@@ -262,7 +271,7 @@ for (var i = 0; i < f_func_Array.length; i++) {
 }
 
 var f_func_main =   'void main() {                                                      \n' +
-                    '  vec3 color = texture2D(u_SampleImage, v_TexCoord).xyz * 255.0;   \n' +
+                    '  vec3 color = _adjustColor(v_TexCoord) * 255.0;                   \n' +
                     '       color = sharpenAdjust(color);                               \n' +
                     '       color = brightAdjust(color);                                \n' +
                     '       color = contrastAdjust(color);                              \n' +
@@ -271,6 +280,6 @@ var f_func_main =   'void main() {                                              
                     '       color = applyCurve(color, u_SamplerCurve);                  \n' +
                     '       color = colorBalanceAdjust(color, u_SamplerColorBalance);   \n' +
                     '       color = haloAdjust(color);                                  \n' +
-                    '   gl_FragColor = vec4(color/ 255.0, 1.0);                         \n' +
+                    '   gl_FragColor = vec4(color / 255.0, 1.0);                        \n' +
                     '}                                                                  \n';
 
