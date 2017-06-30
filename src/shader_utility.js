@@ -243,7 +243,7 @@ var f_func_haloAdjust = 'float linstep(float minV, float maxV, float v) {       
                         '   Ec /= count;                                                                                                            \n' +
                         '   return clamp((color + ( 1.0 - color ) * Ec * u_Halo) * 255.0, 0.0, 255.0);                                              \n' +
                         '}                                                                                                                          \n';
-
+//u_Scale 是canvas和实际图片的比例，做一个均值模糊，然后做缩放的时候就不会花边了
 var f_func_adjustColor =   'vec3 _adjustColor(vec2 coord) {                                                                                         \n' +
                            '    float scale = u_Scale;                                                                                              \n' +
                            '    vec3 color = vec3(0.0);                                                                                             \n' +
