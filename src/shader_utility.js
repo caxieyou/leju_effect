@@ -261,7 +261,7 @@ var f_func_adjustColor =   'vec3 _adjustColor(vec2 coord) {                     
                            '            {                                                                                                           \n' +
                            '                color += texture2D(u_SampleImage, coord + vec2(float(i) * u_InvSize.x,  float(j) * u_InvSize.y)).xyz;   \n' +
                            '            }                                                                                                           \n' +
-                           '        color /= 5.0;                                                                                                   \n' +
+                           '        color /= 9.0;                                                                                                   \n' +
                            '    } else {                                                                                                            \n' +
                            '        color = texture2D(u_SampleImage, coord).xyz;                                                                    \n' +
                            '    }                                                                                                                   \n' +
