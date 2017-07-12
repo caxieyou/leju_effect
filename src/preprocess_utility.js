@@ -192,17 +192,17 @@ var BALANCE_MODE = {
 function pre_colorBalance(setting)
 {
     //Make sure cyan, magenta, yellow are between -100 to 100
-    var cyan    = setting.cyan;
-    var magenta = setting.magenta;
-    var yellow  = setting.yellow;
-    var mode    = setting.mode;
-    var cyan_red = [0, 0, 0];
-    var magenta_green = [0, 0, 0];
-    var yellow_blue = [0, 0, 0];
+    //var cyan    = setting.cyan;
+    //var magenta = setting.magenta;
+    //var yellow  = setting.yellow;
+    //var mode    = setting.mode;
+    var cyan_red = [setting.cyan[0], setting.cyan[1], setting.cyan[2]];
+    var magenta_green = [setting.magenta[0], setting.magenta[1], setting.magenta[2]];
+    var yellow_blue = [setting.yellow[0], setting.yellow[1], setting.yellow[2]];
     
-    cyan_red[mode] = cyan;
-    magenta_green[mode] = magenta;
-    yellow_blue[mode] = yellow;
+    //cyan_red[mode] = cyan;
+    //magenta_green[mode] = magenta;
+    //yellow_blue[mode] = yellow;
     
     var highlights_add = new Float32Array(256); 
     var midtones_add   = new Float32Array(256); 

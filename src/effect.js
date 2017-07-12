@@ -3,10 +3,10 @@ var effectRender = new EffectRender();
 
 //var gl;     //webgl context
 var colorBalanceSetting = {
-    cyan    : 0,
-    magenta : 0,
-    yellow  : 0,
-    mode    : BALANCE_MODE.MIDTONES
+    cyan    : [0, 0, 0],
+    magenta : [0, 0, 0],
+    yellow  : [0, 0, 0]
+    //mode    : BALANCE_MODE.MIDTONES
 };
 
 function onBrightnessChanged(value)
@@ -78,7 +78,8 @@ function onSharpenChanged(value)
 function onCyanChanged(value)
 {
     document.getElementById("cyan").innerHTML = value;
-    colorBalanceSetting.cyan = value;
+    //前端调节好具体的模式，高光还是阴影还是中间调，我这里写死了
+    colorBalanceSetting.cyan[BALANCE_MODE.MIDTONES] = value;
     var colorBalanceTable = pre_colorBalance(colorBalanceSetting);
     effectRender.setColorBalance(colorBalanceTable);
     return colorBalanceTable;
@@ -87,7 +88,7 @@ function onCyanChanged(value)
 function onMagentaChanged(value)
 {
     document.getElementById("magenta").innerHTML = value;
-    colorBalanceSetting.magenta = value;
+    colorBalanceSetting.magenta[BALANCE_MODE.MIDTONES] = value;
     var colorBalanceTable = pre_colorBalance(colorBalanceSetting);
     effectRender.setColorBalance(colorBalanceTable);
     return colorBalanceTable;
@@ -96,7 +97,7 @@ function onMagentaChanged(value)
 function onYellowChanged(value)
 {
     document.getElementById("yellow").innerHTML = value;
-    colorBalanceSetting.yellow = value;
+    colorBalanceSetting.yellow[BALANCE_MODE.MIDTONES] = value;
     var colorBalanceTable = pre_colorBalance(colorBalanceSetting);
     effectRender.setColorBalance(colorBalanceTable);
     return colorBalanceTable;
