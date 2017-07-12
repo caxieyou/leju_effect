@@ -2,6 +2,10 @@
 var effectRender = new EffectRender();
 
 //var gl;     //webgl context
+//cyan = [0, 0, 0]
+//idnex: 0 is SHADOWS 阴影
+//       1 is MIDTONES 中间调
+//       2 is HIGHLIGHTS 高光
 var colorBalanceSetting = {
     cyan    : [0, 0, 0],
     magenta : [0, 0, 0],
