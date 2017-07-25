@@ -16,6 +16,7 @@ function EffectRender() {
                             "u_PreserveLuminosity", "u_Halo", "u_Scale"];
     this._uniformSet     = [];
     this._srcImg         = null;
+    this._fbo            = null;
 };
 
 EffectRender.prototype.init = function(canvas) {
@@ -28,6 +29,56 @@ EffectRender.prototype.init = function(canvas) {
     this._initVertexBuffers();
     this._initUniforms(this._uniformNameSet);
     this._initTextures();
+};
+
+EffectRender.prototype._initFramebufferObject = function() {
+  var framebuffer, texture, depthBuffer;
+
+  // Define the error handling function
+  var error = function() {
+    if (framebuffer) this._gl.deleteFramebuffer(framebuffer);
+    if (texture) this._gl.deleteTexture(texture);
+    if (depthBuffer) this._gl.deleteRenderbuffer(depthBuffer);
+    return null;
+  }
+
+  // Create a frame buffer object (FBO)
+  framebuffer = this._gl.createFramebuffer();
+  if (!framebuffer) {
+    console.log('Failed to create frame buffer object');
+    return error();
+  }
+
+  // Create a texture object and set its size and parameters
+  texture = this._gl.createTexture(); // Create a texture object
+  if (!texture) {
+    console.log('Failed to create texture object');
+    return error();
+  }
+  this._gl.activeTexture(this._gl.TEXTURE3);
+  this._gl.bindTexture(this._gl.TEXTURE_2D, texture); // Bind the object to target
+  this._gl.texImage2D(this._gl.TEXTURE_2D, 0, this._gl.RGBA, this._srcImg.width, this._srcImg.height, 0, this._gl.RGBA, this._gl.UNSIGNED_BYTE, null);
+  this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MIN_FILTER, this._gl.LINEAR);
+  framebuffer.texture = texture; // Store the texture object
+  
+  // Attach the texture and the renderbuffer object to the FBO
+  this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, framebuffer);
+  this._gl.framebufferTexture2D(this._gl.FRAMEBUFFER, this._gl.COLOR_ATTACHMENT0, this._gl.TEXTURE_2D, texture, 0);
+  //this._gl.framebufferRenderbuffer(this._gl.FRAMEBUFFER, this._gl.DEPTH_ATTACHMENT, this._gl.RENDERBUFFER, depthBuffer);
+
+  // Check if FBO is configured correctly
+  var e = this._gl.checkFramebufferStatus(this._gl.FRAMEBUFFER);
+  if (this._gl.FRAMEBUFFER_COMPLETE !== e) {
+    console.log('Frame buffer object is incomplete: ' + e.toString());
+    return error();
+  }
+
+  // Unbind the buffer object
+  this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, null);
+  this._gl.bindTexture(this._gl.TEXTURE_2D, null);
+  this._gl.bindRenderbuffer(this._gl.RENDERBUFFER, null);
+
+  return framebuffer;
 };
 
 EffectRender.prototype._initVertexBuffers = function() {
@@ -113,6 +164,9 @@ EffectRender.prototype._createTexture = function(index, colorTable, image) {
     this._gl.activeTexture(this._gl.TEXTURE0 + index);
     this._gl.bindTexture(this._gl.TEXTURE_2D, texture);
 
+    if (index === 2) {
+        this.xxx = texture;
+    }
     // Set the texture parameters
     this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MIN_FILTER, this._gl.LINEAR);
     this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MAG_FILTER, this._gl.LINEAR);
@@ -128,12 +182,20 @@ EffectRender.prototype._createTexture = function(index, colorTable, image) {
     }
 };
 
-EffectRender.prototype.updateCanvas = function() {
+EffectRender.prototype.updateCanvas = function(isFBO) {
+    if (isFBO) {
+        this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, this._fbo);
+    }
+
     this._gl.clear(this._gl.COLOR_BUFFER_BIT);   // Clear <canvas>
     this._gl.drawArrays(this._gl.TRIANGLE_STRIP, 0, 4); // Draw the rectangle
     //强制刷新，异步改为同步
     var syncBuffer = new Uint8Array(4); 
     this._gl.readPixels(0, 0, 1, 1, this._gl.RGBA, this._gl.UNSIGNED_BYTE, syncBuffer);
+    
+    if (isFBO) {
+         this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, null);
+    }
 };
 
 //width 和 height 是canvas的宽高
@@ -177,6 +239,7 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
             console.log("change image: " + Math.min(_width / that._srcImg.width, 1.0));
             that.reset();
             that.updateCanvas();
+            that._fbo = that._initFramebufferObject();
         };
         newImage.src = canvas.toDataURL("image/png");
     } else {
@@ -195,31 +258,40 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
         this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(_width / this._srcImg.width, 1.0));
         this.reset();
         this.updateCanvas();
+        this._fbo = this._initFramebufferObject();
+        console.log(this._fbo);
     }
+    
 };
 
-EffectRender.prototype.dump = function(canvas) {
-    var oldWidth = canvas.width;
-    var oldHeight = canvas.height;
+EffectRender.prototype.dump = function(canvas, isFBO) {
+
+        var oldWidth = canvas.width;
+        var oldHeight = canvas.height;
+        
+        canvas.style.width = this._srcImg.width + "px";
+        canvas.style.height = this._srcImg.height + "px";
+        canvas.width = this._srcImg.width;
+        canvas.height = this._srcImg.height;
+        this._gl.viewport(0, 0, this._srcImg.width, this._srcImg.height);
+        this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(canvas.width / this._srcImg.width, 1.0));
+        this.updateCanvas(isFBO);
+        var thumbnail
+        if (!isFBO) {
+            thumbnail = canvas.toDataURL("image/png");
+        } else {
+            thumbnail = this._fbo.texture;
+        }
+
+        canvas.style.width = oldWidth + "px";
+        canvas.style.height = oldHeight + "px";
+        canvas.width = oldWidth;
+        canvas.height = oldHeight;
+        this._gl.viewport(0, 0, oldWidth, oldHeight);
+        this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(canvas.width / this._srcImg.width, 1.0));
+        this.updateCanvas();
+        return thumbnail;
     
-    canvas.style.width = this._srcImg.width + "px";
-    canvas.style.height = this._srcImg.height + "px";
-    canvas.width = this._srcImg.width;
-    canvas.height = this._srcImg.height;
-    this._gl.viewport(0, 0, this._srcImg.width, this._srcImg.height);
-    this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(canvas.width / this._srcImg.width, 1.0));
-    this.updateCanvas();
-    
-    var thumbnail = canvas.toDataURL("image/png");
-    
-    canvas.style.width = oldWidth + "px";
-    canvas.style.height = oldHeight + "px";
-    canvas.width = oldWidth;
-    canvas.height = oldHeight;
-    this._gl.viewport(0, 0, oldWidth, oldHeight);
-    this._gl.uniform1f(this._uniformSet['u_Scale'], Math.min(canvas.width / this._srcImg.width, 1.0));
-    this.updateCanvas();
-    return thumbnail;
 }
 
 //假设你已经把canvas给resize好了，把它的宽高传进来

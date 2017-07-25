@@ -159,6 +159,12 @@ function onChangeImage() {
     image.src = '../resources/view2.jpg';
 }
 
+function onGetTexture(canvas) {
+    var canvas = document.getElementById('webgl');
+    var texture = effectRender.dump(canvas, true);
+    console.log(texture);
+}
+
 //var points = [];
 //points[0] = {x: 0, y: 0};
 //points[1] = {x: 255, y: 255};
