@@ -164,9 +164,6 @@ EffectRender.prototype._createTexture = function(index, colorTable, image) {
     this._gl.activeTexture(this._gl.TEXTURE0 + index);
     this._gl.bindTexture(this._gl.TEXTURE_2D, texture);
 
-    if (index === 2) {
-        this.xxx = texture;
-    }
     // Set the texture parameters
     this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MIN_FILTER, this._gl.LINEAR);
     this._gl.texParameteri(this._gl.TEXTURE_2D, this._gl.TEXTURE_MAG_FILTER, this._gl.LINEAR);
@@ -259,7 +256,6 @@ EffectRender.prototype.setSrcImage = function(image, width, height) {
         this.reset();
         this.updateCanvas();
         this._fbo = this._initFramebufferObject();
-        console.log(this._fbo);
     }
     
 };
