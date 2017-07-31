@@ -290,6 +290,42 @@ EffectRender.prototype.dump = function(canvas, isFBO) {
     
 }
 
+EffectRender.prototype.getHist = function(canvas) {
+    var width = canvas.width;
+    var height = canvas.height;
+    var histCount = new Array(256); 
+    var syncBuffer = = new Uint8Array(width * height * 4); 
+    
+    for (var i = 0; i < 256; i++) {
+        histCount[i] = 0;
+    }
+    
+    this._gl.readPixels(0, 0, width, height, this._gl.RGBA, this._gl.UNSIGNED_BYTE, syncBuffer);
+    
+    for(var i = 0; i < height ; i++)
+    {
+        for(var j = 0 ; j < width ; j++)
+        {
+            var offset = (i * width + j) * 4;
+            
+            var r = syncBuffer[offset + 0];
+            var g = syncBuffer[offset + 1];
+            var b = syncBuffer[offset + 2];
+            
+            var grayValue =  Math.floor(r * 0.299 + g * 0.587 + b * 0.114);
+            //debugger;
+            histCount[grayValue]++;
+        }
+    }
+    
+    for (var i = 0; i < 256; i++) {
+        histCount[i] /= width * height;
+    }
+    
+    return histCount;
+}
+
+
 //假设你已经把canvas给resize好了，把它的宽高传进来
 EffectRender.prototype.resize = function(width, height) {
     this._gl.viewport(0, 0, width, height);

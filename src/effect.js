@@ -176,7 +176,7 @@ function onCurveChanged(points) {
     effectRender.setCurve(curveTable);
     return curveTable;
 }
-
+/*
 function hist(image) {
     
     var canvas = document.createElement('canvas');
@@ -212,7 +212,7 @@ function hist(image) {
     
     return histCount;
 }
-
+*/
 function main() {
     // 获取Canvas
     var canvas = document.getElementById('webgl');
